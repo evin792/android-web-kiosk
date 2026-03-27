@@ -1,5 +1,8 @@
 package org.screenlite.webkiosk.components
 
+import android.content.Intent
+import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,8 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -20,6 +25,7 @@ import org.screenlite.webkiosk.R
 import org.screenlite.webkiosk.data.KioskSettingsFactory
 import org.screenlite.webkiosk.data.Rotation
 import org.screenlite.webkiosk.service.StayOnTopService
+import org.screenlite.webkiosk.util.YfBroadcast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +45,7 @@ fun SettingsScreen() {
     var idleBrightnessError by remember { mutableStateOf<String?>(null) }
     var activeBrightnessError by remember { mutableStateOf<String?>(null) }
 
-    val tabs = listOf("General", "Display", "Brightness")
+    val tabs = listOf("General", "Display", "Brightness", "System")
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
@@ -105,6 +111,16 @@ fun SettingsScreen() {
                     onIdleBrightnessErrorChange = { idleBrightnessError = it },
                     onActiveBrightnessErrorChange = { activeBrightnessError = it }
                 )
+                3 -> SystemSettingsTabContent(
+                    context = context,
+                    onReboot = { YfBroadcast.yfReboot(context) },
+                    onOpenSettings = {
+                        Intent(Settings.ACTION_SETTINGS).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            context.startActivity(this)
+                        }
+                    }
+                )
             }
 
             Spacer(Modifier.height(32.dp))
@@ -158,6 +174,116 @@ fun SettingsScreen() {
     }
 }
 
+@Composable
+fun SystemSettingsTabContent(
+    context: android.content.Context,
+    onReboot: () -> Unit,
+    onOpenSettings: () -> Unit
+) {
+    // 控制确认弹窗显示
+    var showRebootConfirm by remember { mutableStateOf(false) }
+
+    // 重启确认对话框
+    if (showRebootConfirm) {
+        AlertDialog(
+            onDismissRequest = { showRebootConfirm = false },
+            title = { Text("Confirm Reboot") },
+            text = { Text("The device will reboot. Continue?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showRebootConfirm = false
+                        onReboot()  // 执行重启
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Reboot", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRebootConfirm = false }) {
+                    Text("Cancel")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 48.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
+        Spacer(Modifier.height(24.dp))
+
+        // Reboot 按钮 - 点击时显示确认弹窗
+        Button(
+            onClick = { showRebootConfirm = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError
+            ),
+            contentPadding = PaddingValues(vertical = 16.dp, horizontal = 24.dp)
+        ) {
+            Text(
+                "🔄 Reboot Device",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // System Settings
+        Button(
+            onClick = onOpenSettings,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            ),
+            contentPadding = PaddingValues(vertical = 16.dp, horizontal = 24.dp)
+        ) {
+            Text(
+                "⚙️ Open System Settings",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        // 提示卡片
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                    text = "⚠️ Warning",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "• Reboot will restart the device immediately\n• System Settings allows configuration of Android system options\n• Return to Kiosk by pressing Back button",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                )
+            }
+        }
+    }
+}
+
+// General Settings Tab
 @Composable
 fun GeneralSettingsTab(
     kioskUrl: String,

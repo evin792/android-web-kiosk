@@ -48,6 +48,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // 隐藏状态栏和导航栏（基于 YF-356x 广播接口）
+        hideSystemBars()
+
         FullScreenHelper.enableImmersiveMode(this.window)
         StayOnTopServiceStarter.ensureRunning(this)
 
@@ -63,6 +66,21 @@ class MainActivity : ComponentActivity() {
                 AppContent(unlockHandler, this)
             }
         }
+    }
+
+    // 发送广播隐藏系统栏
+    private fun hideSystemBars() {
+        // 隐藏导航栏（底部）- value: 0=隐藏, 1=显示
+        sendBroadcast(Intent("com.android.yf_set_navigation_bar").apply {
+            putExtra("value", 0)
+        })
+
+        // 隐藏状态栏（顶部）- value: 0=隐藏, 1=显示
+        sendBroadcast(Intent("com.android.yf_set_status_bar").apply {
+            putExtra("value", 0)
+        })
+
+        Log.d("MainActivity", "System bars hidden via YF broadcast")
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
@@ -82,6 +100,9 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         idleController.start()
+
+        // 可选：onResume 时再次确保隐藏（防止系统恢复）
+        hideSystemBars()
     }
 }
 

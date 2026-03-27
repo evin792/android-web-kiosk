@@ -25,6 +25,7 @@ import org.screenlite.webkiosk.data.KioskSettingsFactory
 import org.screenlite.webkiosk.data.Rotation
 import androidx.compose.ui.platform.LocalConfiguration
 import android.content.res.Configuration
+import androidx.compose.ui.unit.sp
 
 private const val TAG = "WebViewComponent"
 
@@ -158,7 +159,7 @@ fun WebViewComponent(
             contentAlignment = Alignment.Center
         ) {
             Log.w(TAG, "Showing connection error UI")
-            Text("Connection error\nRetrying...", color = Color.White)
+            Text("Connection error\nRetrying...", color = Color.White,fontSize = 30.sp)
         }
 
         isLoading -> Box(
@@ -168,7 +169,7 @@ fun WebViewComponent(
             contentAlignment = Alignment.Center
         ) {
             Log.d(TAG, "Showing loading UI")
-            Text("Loading...", color = Color.White)
+            Text("Loading...", color = Color.White, fontSize = 30.sp)
         }
     }
 }
