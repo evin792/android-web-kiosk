@@ -18,7 +18,7 @@ class IdleBrightnessController(
     private val settings: KioskSettings
 ) {
     private val handler = Handler(Looper.getMainLooper())
-    private var idleTimeout: Long = 60_000L
+    private var idleTimeout: Long = 0L
     private var idleBrightness: Int = 0
     private var activeBrightness: Int = 100
 
@@ -56,8 +56,12 @@ class IdleBrightnessController(
         _isIdleMode.value = false
         Log.d(
             TAG,
-            "Idle timer reset → switching to active brightness: $activeBrightness% (next idle in ${idleTimeout}ms)"
+            "Idle timer reset → active brightness: $activeBrightness%, timeout: ${idleTimeout}ms" +
+                    if (idleTimeout <= 0) " (idle disabled)" else ""
         )
+        // 超时为0时不启动定时器
+        if (idleTimeout <= 0) return
+
         handler.postDelayed(checkIdleRunnable, idleTimeout)
     }
 

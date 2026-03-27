@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Screenlite 网页信息亭</string>
+    <string name="app_name">网页信息亭</string>
 
     <!-- Settings Screen -->
     <string name="settings_title">信息亭设置</string>
