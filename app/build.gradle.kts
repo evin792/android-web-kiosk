@@ -13,7 +13,7 @@ android {
         minSdk = 22
         targetSdk = 36
         versionCode = 11
-        versionName = "0.0.12"
+        versionName = "0.0.12a"
     }
 
     signingConfigs {
@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.leanback)
     implementation(libs.androidx.datastore.preferences)
+    implementation(files("src\\main\\libs\\YF_RK356x_API_v1.2.jar"))
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)

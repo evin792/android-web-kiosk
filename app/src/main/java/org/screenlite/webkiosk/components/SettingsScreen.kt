@@ -2,7 +2,6 @@ package org.screenlite.webkiosk.components
 
 import android.content.Intent
 import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -26,6 +25,14 @@ import org.screenlite.webkiosk.data.KioskSettingsFactory
 import org.screenlite.webkiosk.data.Rotation
 import org.screenlite.webkiosk.service.StayOnTopService
 import org.screenlite.webkiosk.util.YfBroadcast
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.Icon
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.Icon
+import com.youngfeel.yf_rk356x_api.YF_RK356x_API_Manager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -180,20 +187,87 @@ fun SystemSettingsTabContent(
     onReboot: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
-    // 控制确认弹窗显示
+    // 获取 App 版本信息
+    val appVersion = remember {
+        try {
+            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            val versionName = packageInfo.versionName ?: "Unknown"
+            "$versionName"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+    }
+
+    // 获取固件版本（ro.build.display.id）
+    val firmwareVersion = remember {
+        try {
+            android.os.Build.DISPLAY ?: "Unknown"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+    }
+
+    // 获取设备 ID（读取 /proc/cpuinfo）
+    val deviceId = remember {
+        try {
+            val cpuInfo = java.io.File("/proc/cpuinfo").readText()
+            val serialRegex = Regex("Serial\\s*:\\s*(.+)")
+            val match = serialRegex.find(cpuInfo)
+            match?.groupValues?.get(1)?.trim() ?: "Unknown"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+    }
+
+    // 初始化 YF API Manager 并获取内存/存储信息
+    val yfApi = remember {
+        try {
+            YF_RK356x_API_Manager(context)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // 获取屏幕分辨率
+    val screenResolution = remember {
+        try {
+            val width = yfApi?.yfgetScreenWidth() ?: 0
+            val height = yfApi?.yfgetScreenHeight() ?: 0
+            if (width > 0 && height > 0) "${width}×${height}" else "Unknown"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+    }
+
+    val ramSize = remember {
+        try {
+            yfApi?.yfgetRAMSize() ?: "Unknown"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+    }
+
+    val storageSize = remember {
+        try {
+            yfApi?.yfgetInternalStorageMemory() ?: "Unknown"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+    }
+
+    // 重启确认弹窗
     var showRebootConfirm by remember { mutableStateOf(false) }
 
-    // 重启确认对话框
     if (showRebootConfirm) {
         AlertDialog(
             onDismissRequest = { showRebootConfirm = false },
             title = { Text("Confirm Reboot") },
-            text = { Text("The device will reboot. Continue?") },
+            text = { Text("The device will restart immediately. Continue?") },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showRebootConfirm = false
-                        onReboot()  // 执行重启
+                        onReboot()
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
@@ -217,9 +291,162 @@ fun SystemSettingsTabContent(
             .padding(horizontal = 48.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(32.dp))
 
-        // Reboot 按钮 - 点击时显示确认弹窗
+        // 版本信息
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp)
+            ) {
+                // App 名称 + 图标
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = "Info",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // App 版本
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "App Version",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = appVersion,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                // 固件版本
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Firmware",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = firmwareVersion,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                // 设备 ID 显示行
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Device ID",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = deviceId,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                // 屏幕分辨率显示行
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Resolution",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = screenResolution,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                // 内存大小显示行
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "RAM",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = ramSize,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                // 存储大小显示行
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Storage",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = storageSize,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        // Reboot 按钮
         Button(
             onClick = { showRebootConfirm = true },
             modifier = Modifier
@@ -233,8 +460,8 @@ fun SystemSettingsTabContent(
         ) {
             Text(
                 "🔄 Reboot Device",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium
             )
         }
 
@@ -247,24 +474,26 @@ fun SystemSettingsTabContent(
                 .fillMaxWidth()
                 .height(56.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
             ),
             contentPadding = PaddingValues(vertical = 16.dp, horizontal = 24.dp)
         ) {
             Text(
                 "⚙️ Open System Settings",
-                fontSize = 20.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Medium
             )
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(32.dp))
 
         // 提示卡片
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            )
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Text(
@@ -276,10 +505,13 @@ fun SystemSettingsTabContent(
                 Text(
                     text = "• Reboot will restart the device immediately\n• System Settings allows configuration of Android system options\n• Return to Kiosk by pressing Back button",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    lineHeight = 20.sp
                 )
             }
         }
+
+        Spacer(Modifier.height(24.dp))
     }
 }
 
