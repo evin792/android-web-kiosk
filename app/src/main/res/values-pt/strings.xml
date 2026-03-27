@@ -16,18 +16,47 @@
 
     <string name="settings_rotation_label">Rotação do ecrã</string>
 
+    <!-- Tab Labels -->
+    <string name="tab_general">Geral</string>
+    <string name="tab_display">Ecrã</string>
+    <string name="tab_brightness">Brilho</string>
+    <string name="tab_system">Sistema</string>
+
     <!-- Buttons -->
     <string name="button_cancel">Cancelar</string>
     <string name="button_save">Guardar</string>
 
     <string name="settings_idle_timeout_label">Tempo limite de inatividade (segundos)</string>
     <string name="settings_idle_timeout_desc">Tempo antes que a tela escureça devido à inatividade.</string>
+    <string name="seconds_before_dimming">Segundos antes de escurecer</string>
 
     <string name="settings_idle_brightness_label">Brilho inativo (%)</string>
     <string name="settings_idle_brightness_desc">Nível de brilho quando o dispositivo está inativo. 0 = mínimo.</string>
 
     <string name="settings_active_brightness_label">Brilho ativo (%)</string>
     <string name="settings_active_brightness_desc">Nível de brilho quando o dispositivo está em uso. 100 = máximo.</string>
+
+    <string name="settings_user_agent_type_label">Modo do navegador</string>
+    <string name="settings_user_agent_type_desc">Escolha como o site deve ser exibido.</string>
+    <string name="settings_user_agent_mobile">Telemóvel</string>
+    <string name="settings_user_agent_desktop">Computador</string>
+
+    <!-- System Settings Tab -->
+    <string name="info_title">Informações</string>
+    <string name="app_version_label">Versão da aplicação</string>
+    <string name="firmware_label">Firmware</string>
+    <string name="device_id_label">ID do dispositivo</string>
+    <string name="resolution_label">Resolução</string>
+    <string name="ram_label">RAM</string>
+    <string name="storage_label">Armazenamento</string>
+    <string name="button_reboot">🔄 Reiniciar dispositivo</string>
+    <string name="button_open_system_settings">⚙️ Abrir configurações do sistema</string>
+    <string name="warning_title">⚠️ Aviso</string>
+    <string name="warning_message">• Reiniciar irá reiniciar imediatamente o dispositivo\n• Configurações do sistema permite configurar opções do Android\n• Regresse ao quiosque pressionando o botão Voltar</string>
+    <string name="confirm_reboot_title">Confirmar reinício</string>
+    <string name="confirm_reboot_message">O dispositivo será reiniciado imediatamente. Continuar?</string>
+    <string name="button_reboot_confirm">Reiniciar</string>
+    <string name="button_cancel_reboot">Cancelar</string>
 
     <string name="settings_invalid">Por favor, insira valores válidos</string>
 </resources>

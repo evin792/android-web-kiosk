@@ -5,15 +5,15 @@ plugins {
 }
 
 android {
-    namespace = "org.screenlite.webkiosk"
+    namespace = "com.web.kiosk"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "org.screenlite.webkiosk"
+        applicationId = "com.web.kiosk"
         minSdk = 22
         targetSdk = 36
         versionCode = 11
-        versionName = "0.0.12a"
+        versionName = "0.0.13"
     }
 
     signingConfigs {

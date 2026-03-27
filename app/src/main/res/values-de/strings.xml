@@ -16,18 +16,47 @@
 
     <string name="settings_rotation_label">Bildschirmdrehung</string>
 
+    <!-- Tab Labels -->
+    <string name="tab_general">Allgemein</string>
+    <string name="tab_display">Anzeige</string>
+    <string name="tab_brightness">Helligkeit</string>
+    <string name="tab_system">System</string>
+
     <!-- Buttons -->
     <string name="button_cancel">Abbrechen</string>
     <string name="button_save">Speichern</string>
 
     <string name="settings_idle_timeout_label">Ruhezeit-Timeout (Sekunden)</string>
     <string name="settings_idle_timeout_desc">Zeit, nach der sich der Bildschirm aufgrund von Inaktivität verdunkelt.</string>
+    <string name="seconds_before_dimming">Sekunden vor dem Abdunkeln</string>
 
     <string name="settings_idle_brightness_label">Ruhehelligkeit (%)</string>
     <string name="settings_idle_brightness_desc">Helligkeitsstufe, wenn das Gerät im Ruhezustand ist. 0 = Minimum.</string>
 
     <string name="settings_active_brightness_label">Aktive Helligkeit (%)</string>
     <string name="settings_active_brightness_desc">Helligkeitsstufe, wenn das Gerät in Gebrauch ist. 100 = Maximum.</string>
+
+    <string name="settings_user_agent_type_label">Browser-Modus</string>
+    <string name="settings_user_agent_type_desc">Wählen Sie, wie die Website angezeigt werden soll.</string>
+    <string name="settings_user_agent_mobile">Mobil</string>
+    <string name="settings_user_agent_desktop">Desktop</string>
+
+    <!-- System Settings Tab -->
+    <string name="info_title">Info</string>
+    <string name="app_version_label">App-Version</string>
+    <string name="firmware_label">Firmware</string>
+    <string name="device_id_label">Geräte-ID</string>
+    <string name="resolution_label">Auflösung</string>
+    <string name="ram_label">RAM</string>
+    <string name="storage_label">Speicher</string>
+    <string name="button_reboot">🔄 Gerät neu starten</string>
+    <string name="button_open_system_settings">⚙️ Systemeinstellungen öffnen</string>
+    <string name="warning_title">⚠️ Warnung</string>
+    <string name="warning_message">• Neustart startet das Gerät sofort neu\n• Systemeinstellungen ermöglicht die Konfiguration von Android-Optionen\n• Zurück zum Kiosk durch Drücken der Zurück-Taste</string>
+    <string name="confirm_reboot_title">Neustart bestätigen</string>
+    <string name="confirm_reboot_message">Das Gerät wird sofort neu gestartet. Fortfahren?</string>
+    <string name="button_reboot_confirm">Neu starten</string>
+    <string name="button_cancel_reboot">Abbrechen</string>
 
     <string name="settings_invalid">Bitte geben Sie gültige Werte ein</string>
 </resources>

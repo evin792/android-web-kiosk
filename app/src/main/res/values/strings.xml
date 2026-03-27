@@ -16,18 +16,47 @@
 
     <string name="settings_rotation_label">Screen Rotation</string>
 
+    <!-- Tab Labels -->
+    <string name="tab_general">General</string>
+    <string name="tab_display">Display</string>
+    <string name="tab_brightness">Brightness</string>
+    <string name="tab_system">System</string>
+
     <!-- Buttons -->
     <string name="button_cancel">Cancel</string>
     <string name="button_save">Save</string>
 
     <string name="settings_idle_timeout_label">Idle Timeout (seconds)</string>
     <string name="settings_idle_timeout_desc">Time before the screen dims due to inactivity.</string>
+    <string name="seconds_before_dimming">Seconds before dimming</string>
 
     <string name="settings_idle_brightness_label">Idle Brightness (%)</string>
     <string name="settings_idle_brightness_desc">Brightness level when the device is idle. 0 = minimum.</string>
 
     <string name="settings_active_brightness_label">Active Brightness (%)</string>
     <string name="settings_active_brightness_desc">Brightness level when the device is in use. 100 = maximum.</string>
+
+    <string name="settings_user_agent_type_label">Browser Mode</string>
+    <string name="settings_user_agent_type_desc">Choose how the website should be displayed.</string>
+    <string name="settings_user_agent_mobile">Mobile</string>
+    <string name="settings_user_agent_desktop">Desktop</string>
+
+    <!-- System Settings Tab -->
+    <string name="info_title">Info</string>
+    <string name="app_version_label">App Version</string>
+    <string name="firmware_label">Firmware</string>
+    <string name="device_id_label">Device ID</string>
+    <string name="resolution_label">Resolution</string>
+    <string name="ram_label">RAM</string>
+    <string name="storage_label">Storage</string>
+    <string name="button_reboot">🔄 Reboot Device</string>
+    <string name="button_open_system_settings">⚙️ Open System Settings</string>
+    <string name="warning_title">⚠️ Warning</string>
+    <string name="warning_message">• Reboot will restart the device immediately\n• System Settings allows configuration of Android system options\n• Return to Kiosk by pressing Back button</string>
+    <string name="confirm_reboot_title">Confirm Reboot</string>
+    <string name="confirm_reboot_message">The device will restart immediately. Continue?</string>
+    <string name="button_reboot_confirm">Reboot</string>
+    <string name="button_cancel_reboot">Cancel</string>
 
     <string name="settings_invalid">Please enter valid values</string>
 </resources>
