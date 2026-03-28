@@ -23,17 +23,17 @@ fun MainScreen(activity: Activity, modifier: Modifier) {
 
     LaunchedEffect(Unit) {
         kioskSettings.getStartUrl().collect { newUrl ->
-            Log.d(TAG, "URL changed: $newUrl")
+            Log.d(TAG, "URL changed: " + newUrl)
             url = newUrl
         }
     }
 
     LaunchedEffect(Unit) {
         kioskSettings.getUserAgentType().collect { newType ->
-            Log.d(TAG, "UserAgentType collected: $newType")
+            Log.d(TAG, "UserAgentType collected: " + newType)
             currentUserAgentType = newType
             userAgentKey++
-            Log.d(TAG, "UserAgentType changed, key incremented to: $userAgentKey, current type: $currentUserAgentType")
+            Log.d(TAG, "UserAgentType changed, key incremented to: " + userAgentKey + ", current type: " + currentUserAgentType)
         }
     }
     
@@ -42,10 +42,10 @@ fun MainScreen(activity: Activity, modifier: Modifier) {
         showPasswordDialog = true
     }
 
-    Log.d(TAG, "MainScreen recomposition: url=$url, userAgentKey=$userAgentKey, currentUserAgentType=$currentUserAgentType")
+    Log.d(TAG, "MainScreen recomposition: url=" + url + ", userAgentKey=" + userAgentKey + ", currentUserAgentType=" + currentUserAgentType)
 
     key(url, userAgentKey) {
-        Log.d(TAG, "WebViewComponent key triggered: url=$url, userAgentKey=$userAgentKey")
+        Log.d(TAG, "WebViewComponent key triggered: url=" + url + ", userAgentKey=" + userAgentKey)
         WebViewComponent(url = url, activity = activity, modifier)
     }
     

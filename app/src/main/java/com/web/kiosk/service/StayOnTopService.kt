@@ -114,7 +114,7 @@ class StayOnTopService : Service() {
         val channelId = "kiosk_channel"
         val channel = NotificationChannel(
             channelId,
-            "Screenlite Web Kiosk",
+            "Web Kiosk",
             NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
             setSound(null, null)
@@ -125,7 +125,7 @@ class StayOnTopService : Service() {
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         nm.createNotificationChannel(channel)
         val notification: Notification = Notification.Builder(this, channelId)
-            .setContentTitle("Screenlite Web Kiosk")
+            .setContentTitle("Web Kiosk")
             .setContentText("Keeping app on top")
             .setSmallIcon(android.R.drawable.ic_lock_lock)
             .build()
@@ -135,7 +135,7 @@ class StayOnTopService : Service() {
     @Suppress("DEPRECATION")
     private fun startForegroundServiceLegacy() {
         val notification: Notification = Notification.Builder(this)
-            .setContentTitle("Screenlite Web Kiosk")
+            .setContentTitle("Web Kiosk")
             .setContentText("Keeping app on top")
             .setSmallIcon(android.R.drawable.ic_lock_lock)
             .build()

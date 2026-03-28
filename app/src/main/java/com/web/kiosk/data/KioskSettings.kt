@@ -18,6 +18,10 @@ interface KioskSettings {
     fun getUserAgentType(): Flow<UserAgentType>
     suspend fun setUserAgentType(type: UserAgentType)
     
+    // 音量管理
+    fun getVolume(): Flow<Int>
+    suspend fun setVolume(volume: Int)
+    
     // 密码管理
     fun getPassword(): Flow<String>
     suspend fun setPassword(password: String)
@@ -28,5 +32,12 @@ interface KioskSettings {
 enum class UserAgentType(val value: String) {
     DESKTOP("desktop"),
     MOBILE("mobile")
+}
 
+object KioskConfig {
+    /**
+     * 是否显示"打开系统设置"按钮
+     * true = 显示，false = 不显示
+     */
+    const val SHOW_SYSTEM_SETTINGS_BUTTON = false
 }

@@ -55,7 +55,7 @@ object ViewportMetaInjector {
             Log.d("ViewportMetaInjector", "Injecting viewport meta (legacy): width=$width, height=$height")
 
             val script = """
-                javascript:(function() {
+                (function() {
                     var meta = document.querySelector("meta[name=viewport]");
                     if (!meta) {
                         meta = document.createElement('meta');
@@ -70,7 +70,7 @@ object ViewportMetaInjector {
                 })();
                 """
 
-            webView.loadUrl(script)
+            webView.loadUrl("javascript:$script")
         }
     }
 }

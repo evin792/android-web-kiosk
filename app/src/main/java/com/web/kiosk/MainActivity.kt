@@ -38,7 +38,7 @@ import com.web.kiosk.components.MainScreen
 import com.web.kiosk.components.TouchKioskInputOverlay
 import com.web.kiosk.components.TvKioskInputOverlay
 import com.web.kiosk.data.KioskSettingsFactory
-import com.web.kiosk.ui.theme.ScreenliteWebKioskTheme
+import com.web.kiosk.ui.theme.WebKioskTheme
 import com.web.kiosk.ui.theme.isTvDevice
 
 class MainActivity : ComponentActivity() {
@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
         idleController = IdleBrightnessController(this, settings)
 
         setContent {
-            ScreenliteWebKioskTheme {
+            WebKioskTheme {
                 AppContent(unlockHandler, this)
             }
         }

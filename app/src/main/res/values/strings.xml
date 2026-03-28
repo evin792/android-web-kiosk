@@ -1,18 +1,19 @@
 <resources>
     <string name="app_name">Web Kiosk</string>
-    <string name="stay_on_top_service_justification" translatable="false">This service is required to keep the web kiosk application visible and prevent it from being closed, which is the core functionality of a kiosk app.</string>
+    <string name="stay_on_top_service_justification" translatable="false">This service keeps the web kiosk visible and prevents it from closing.</string>
+
     <!-- Settings Screen -->
     <string name="settings_title">Kiosk Settings</string>
     <string name="settings_kiosk_url_label">Kiosk URL</string>
-    <string name="settings_kiosk_url_desc">This is the only webpage shown in kiosk mode.</string>
-    <string name="settings_kiosk_url_placeholder">https://screenlite.org</string>
+    <string name="settings_kiosk_url_desc">The webpage displayed in kiosk mode.</string>
+    <string name="settings_kiosk_url_placeholder">https://www.bing.com</string>
 
-    <string name="settings_check_interval_label">App Check Interval (seconds)</string>
-    <string name="settings_check_interval_desc">How often the service verifies the kiosk is active. If closed, it restarts automatically.</string>
+    <string name="settings_check_interval_label">Check Interval (seconds)</string>
+    <string name="settings_check_interval_desc">How often the app checks if the kiosk is active. Auto-restarts if closed.</string>
     <string name="settings_check_interval_placeholder">e.g., 30</string>
     <string name="settings_check_interval_supporting">Min: 1, Max: 99999</string>
-    <string name="settings_check_interval_empty">Interval cannot be empty</string>
-    <string name="settings_check_interval_invalid">Please enter a value between 1 and 99999</string>
+    <string name="settings_check_interval_empty">Interval required</string>
+    <string name="settings_check_interval_invalid">Enter a value between 1 and 99999</string>
 
     <string name="settings_rotation_label">Screen Rotation</string>
 
@@ -20,6 +21,7 @@
     <string name="tab_general">General</string>
     <string name="tab_display">Display</string>
     <string name="tab_brightness">Brightness</string>
+    <string name="tab_info">Info</string>
     <string name="tab_system">System</string>
 
     <!-- Buttons -->
@@ -27,36 +29,44 @@
     <string name="button_save">Save</string>
 
     <string name="settings_idle_timeout_label">Idle Timeout (seconds)</string>
-    <string name="settings_idle_timeout_desc">Time before the screen dims due to inactivity.</string>
+    <string name="settings_idle_timeout_desc">Time before screen dims when inactive.</string>
     <string name="seconds_before_dimming">Seconds before dimming</string>
 
     <string name="settings_idle_brightness_label">Idle Brightness (%)</string>
-    <string name="settings_idle_brightness_desc">Brightness level when the device is idle. 0 = minimum.</string>
+    <string name="settings_idle_brightness_desc">Brightness when device is idle. 0 = minimum.</string>
 
     <string name="settings_active_brightness_label">Active Brightness (%)</string>
-    <string name="settings_active_brightness_desc">Brightness level when the device is in use. 100 = maximum.</string>
+    <string name="settings_active_brightness_desc">Brightness when device is in use. 100 = maximum.</string>
+
+    <string name="settings_volume_label">Volume (%)</string>
+    <string name="settings_volume_desc">System volume level. 0 = mute, 100 = max.</string>
 
     <string name="settings_user_agent_type_label">Browser Mode</string>
-    <string name="settings_user_agent_type_desc">Choose how the website should be displayed.</string>
+    <string name="settings_user_agent_type_desc">How websites are displayed.</string>
     <string name="settings_user_agent_mobile">Mobile</string>
     <string name="settings_user_agent_desktop">Desktop</string>
 
     <!-- System Settings Tab -->
-    <string name="info_title">Info</string>
+    <string name="info_title">Device Info</string>
     <string name="app_version_label">App Version</string>
     <string name="firmware_label">Firmware</string>
     <string name="device_id_label">Device ID</string>
+    <string name="hardware_model_label">Model</string>
     <string name="resolution_label">Resolution</string>
     <string name="ram_label">RAM</string>
     <string name="storage_label">Storage</string>
     <string name="button_reboot">🔄 Reboot Device</string>
-    <string name="button_open_system_settings">⚙️ Open System Settings</string>
+    <string name="button_open_system_settings">⚙️ System Settings</string>
+    <string name="button_wifi_settings">🛜 WiFi Settings</string>
+    <string name="button_adjust_volume">🔊 Volume</string>
+    <string name="dialog_volume_title">Adjust Volume</string>
+    <string name="button_confirm">Confirm</string>
     <string name="warning_title">⚠️ Warning</string>
-    <string name="warning_message">• Reboot will restart the device immediately\n• System Settings allows configuration of Android system options\n• Return to Kiosk by pressing Back button</string>
+    <string name="warning_message">• Reboot will restart device immediately\n• Press Back to return to Kiosk</string>
     <string name="confirm_reboot_title">Confirm Reboot</string>
-    <string name="confirm_reboot_message">The device will restart immediately. Continue?</string>
+    <string name="confirm_reboot_message">Device will restart now. Continue?</string>
     <string name="button_reboot_confirm">Reboot</string>
     <string name="button_cancel_reboot">Cancel</string>
 
-    <string name="settings_invalid">Please enter valid values</string>
+    <string name="settings_invalid">Invalid values</string>
 </resources>

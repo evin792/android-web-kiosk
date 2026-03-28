@@ -18,7 +18,12 @@ class TapUnlockHandler(
 
         if (clickCount >= requiredTaps) {
             onUnlocked()
-            clickCount = 0
+            reset()
         }
+    }
+    
+    fun reset() {
+        clickCount = 0
+        lastClickTime = 0L
     }
 }

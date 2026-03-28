@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Web Kiosk</string>
 
@@ -5,7 +6,7 @@
     <string name="settings_title">Kiosk-Einstellungen</string>
     <string name="settings_kiosk_url_label">Kiosk-URL</string>
     <string name="settings_kiosk_url_desc">Dies ist die einzige Webseite, die im Kioskmodus angezeigt wird.</string>
-    <string name="settings_kiosk_url_placeholder">https://screenlite.org</string>
+    <string name="settings_kiosk_url_placeholder">https://www.bing.com</string>
 
     <string name="settings_check_interval_label">App-Prüfintervall (Sekunden)</string>
     <string name="settings_check_interval_desc">Wie oft der Dienst überprüft, ob der Kiosk aktiv ist. Falls geschlossen, wird er automatisch neu gestartet.</string>
@@ -20,6 +21,7 @@
     <string name="tab_general">Allgemein</string>
     <string name="tab_display">Anzeige</string>
     <string name="tab_brightness">Helligkeit</string>
+    <string name="tab_info">Info</string>
     <string name="tab_system">System</string>
 
     <!-- Buttons -->
@@ -36,6 +38,9 @@
     <string name="settings_active_brightness_label">Aktive Helligkeit (%)</string>
     <string name="settings_active_brightness_desc">Helligkeitsstufe, wenn das Gerät in Gebrauch ist. 100 = Maximum.</string>
 
+    <string name="settings_volume_label">Lautstärke (%)</string>
+    <string name="settings_volume_desc">Systemlautstärke. 0 = stumm, 100 = Maximum.</string>
+
     <string name="settings_user_agent_type_label">Browser-Modus</string>
     <string name="settings_user_agent_type_desc">Wählen Sie, wie die Website angezeigt werden soll.</string>
     <string name="settings_user_agent_mobile">Mobil</string>
@@ -46,13 +51,18 @@
     <string name="app_version_label">App-Version</string>
     <string name="firmware_label">Firmware</string>
     <string name="device_id_label">Geräte-ID</string>
+    <string name="hardware_model_label">Hardware-Modell</string>
     <string name="resolution_label">Auflösung</string>
     <string name="ram_label">RAM</string>
     <string name="storage_label">Speicher</string>
     <string name="button_reboot">🔄 Gerät neu starten</string>
     <string name="button_open_system_settings">⚙️ Systemeinstellungen öffnen</string>
+    <string name="button_wifi_settings">🛜 WLAN-Einstellungen</string>
+    <string name="button_adjust_volume">🔊 Lautstärke anpassen</string>
+    <string name="dialog_volume_title">Systemlautstärke anpassen</string>
+    <string name="button_confirm">Bestätigen</string>
     <string name="warning_title">⚠️ Warnung</string>
-    <string name="warning_message">• Neustart startet das Gerät sofort neu\n• Systemeinstellungen ermöglicht die Konfiguration von Android-Optionen\n• Zurück zum Kiosk durch Drücken der Zurück-Taste</string>
+    <string name="warning_message">• Neustart startet das Gerät sofort neu\n• Zurück zum Kiosk durch Drücken der Zurück-Taste</string>
     <string name="confirm_reboot_title">Neustart bestätigen</string>
     <string name="confirm_reboot_message">Das Gerät wird sofort neu gestartet. Fortfahren?</string>
     <string name="button_reboot_confirm">Neu starten</string>
@@ -60,3 +70,4 @@
 
     <string name="settings_invalid">Bitte geben Sie gültige Werte ein</string>
 </resources>
+

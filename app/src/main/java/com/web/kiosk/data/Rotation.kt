@@ -28,6 +28,7 @@ class DataStoreKioskSettings(private val context: Context) : KioskSettings {
     private val keyActiveBrightness = intPreferencesKey("active_brightness")
     private val keyUserAgentType = stringPreferencesKey("user_agent_type")
     private val keyPassword = stringPreferencesKey("admin_password")
+    private val keyVolume = intPreferencesKey("volume")
 
     override fun getCheckInterval(): Flow<Long> {
         return context.dataStore.data.map { prefs ->
@@ -112,6 +113,14 @@ class DataStoreKioskSettings(private val context: Context) : KioskSettings {
 
     override suspend fun setUserAgentType(type: UserAgentType) {
         context.dataStore.edit { prefs -> prefs[keyUserAgentType] = type.value }
+    }
+
+    override fun getVolume(): Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[keyVolume] ?: 50
+    }
+
+    override suspend fun setVolume(volume: Int) {
+        context.dataStore.edit { prefs -> prefs[keyVolume] = volume.coerceIn(0, 100) }
     }
 
     override fun getPassword(): Flow<String> = context.dataStore.data.map { prefs ->

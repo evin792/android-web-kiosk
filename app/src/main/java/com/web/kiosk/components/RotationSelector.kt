@@ -15,7 +15,7 @@ fun RotationSelector(rotation: Rotation, onRotationChange: (Rotation) -> Unit) {
     Text(
         text = "Rotation",
         style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
+        modifier = Modifier.padding(bottom = 8.dp)
     )
 
     if (isTvDevice()) {

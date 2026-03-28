@@ -37,7 +37,7 @@ class IdleBrightnessController(
         Log.d(TAG, "Starting IdleBrightnessController...")
 
         CoroutineScope(Dispatchers.Main).launch {
-            idleTimeout = (settings.getIdleTimeout().first() * 1000)
+            idleTimeout = settings.getIdleTimeout().first() * 1000L
             idleBrightness = settings.getIdleBrightness().first()
             activeBrightness = settings.getActiveBrightness().first()
 
@@ -59,7 +59,6 @@ class IdleBrightnessController(
             "Idle timer reset → active brightness: $activeBrightness%, timeout: ${idleTimeout}ms" +
                     if (idleTimeout <= 0) " (idle disabled)" else ""
         )
-        // 超时为0时不启动定时器
         if (idleTimeout <= 0) return
 
         handler.postDelayed(checkIdleRunnable, idleTimeout)

@@ -1,8 +1,11 @@
 package com.web.kiosk.components
 
+import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -16,13 +19,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.web.kiosk.R
+import com.web.kiosk.data.KioskConfig
 import com.web.kiosk.data.KioskSettingsFactory
 import com.web.kiosk.data.Rotation
 import com.web.kiosk.data.UserAgentType
@@ -58,9 +61,20 @@ fun SettingsScreen() {
         stringResource(R.string.tab_general),
         stringResource(R.string.tab_display),
         stringResource(R.string.tab_brightness),
-        stringResource(R.string.tab_system)
+        stringResource(R.string.tab_system),
+        stringResource(R.string.tab_info)
     )
     var selectedTabIndex by remember { mutableIntStateOf(0) }
+
+    val appVersion = remember {
+        try {
+            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            val versionName = packageInfo.versionName ?: "Unknown"
+            versionName
+        } catch (_: Exception) {
+            "Unknown"
+        }
+    }
 
     LaunchedEffect(Unit) {
         kioskUrl = kioskSettings.getStartUrl().first()
@@ -76,6 +90,14 @@ fun SettingsScreen() {
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineLarge) },
+                actions = {
+                    Text(
+                        text = "v$appVersion",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
@@ -138,22 +160,39 @@ fun SettingsScreen() {
                         }
                     }
                 )
+                4 -> InfoSettingsTab(
+                    context = context
+                )
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(24.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 48.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.End)
             ) {
-                FocusableButton(
-                    text = stringResource(R.string.button_cancel),
+                OutlinedButton(
                     onClick = { (context as? ComponentActivity)?.finish() },
-                    background = MaterialTheme.colorScheme.surface
-                )
+                    modifier = Modifier
+                        .widthIn(min = 120.dp)
+                        .height(40.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                    shape = MaterialTheme.shapes.medium,
+                    contentPadding = PaddingValues(horizontal = 20.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.button_cancel),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
 
-                FocusableButton(
-                    text = stringResource(R.string.button_save),
+                Button(
                     onClick = {
                         var hasError = false
 
@@ -170,7 +209,7 @@ fun SettingsScreen() {
                         val activeBrightnessValue = activeBrightness.toIntOrNull()
                         if (activeBrightnessValue == null || activeBrightnessValue !in 0..100) { activeBrightnessError = "0–100"; hasError = true }
 
-                        if (hasError) return@FocusableButton
+                        if (hasError) return@Button
 
                         (context as? ComponentActivity)?.lifecycleScope?.launch {
                             kioskSettings.setCheckInterval(checkIntervalValue!! * 1000L)
@@ -185,25 +224,35 @@ fun SettingsScreen() {
                         }
                         (context as? ComponentActivity)?.finish()
                     },
-                    background = MaterialTheme.colorScheme.primary
-                )
+                    modifier = Modifier
+                        .widthIn(min = 120.dp)
+                        .height(40.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = Color.White
+                    ),
+                    shape = MaterialTheme.shapes.medium,
+                    contentPadding = PaddingValues(horizontal = 20.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.button_save),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun SystemSettingsTabContent(
-    context: android.content.Context,
-    onReboot: () -> Unit,
-    onOpenSettings: () -> Unit
-) {
+fun InfoSettingsTab(context: Context) {
     val appVersion = remember {
         try {
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             val versionName = packageInfo.versionName ?: "Unknown"
-            "$versionName"
-        } catch (e: Exception) {
+            versionName
+        } catch (_: Exception) {
             "Unknown"
         }
     }
@@ -211,7 +260,21 @@ fun SystemSettingsTabContent(
     val firmwareVersion = remember {
         try {
             android.os.Build.DISPLAY ?: "Unknown"
-        } catch (e: Exception) {
+        } catch (_: Exception) {
+            "Unknown"
+        }
+    }
+
+    val hardwareModel = remember {
+        try {
+            val manufacturer = android.os.Build.MANUFACTURER ?: ""
+            val model = android.os.Build.MODEL ?: ""
+            if (manufacturer.isNotEmpty() && model.isNotEmpty()) {
+                "$manufacturer $model"
+            } else {
+                model.ifEmpty { "Unknown" }
+            }
+        } catch (_: Exception) {
             "Unknown"
         }
     }
@@ -222,7 +285,7 @@ fun SystemSettingsTabContent(
             val serialRegex = Regex("Serial\\s*:\\s*(.+)")
             val match = serialRegex.find(cpuInfo)
             match?.groupValues?.get(1)?.trim() ?: "Unknown"
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             "Unknown"
         }
     }
@@ -230,7 +293,7 @@ fun SystemSettingsTabContent(
     val yfApi = remember {
         try {
             YF_RK356x_API_Manager(context)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -240,7 +303,7 @@ fun SystemSettingsTabContent(
             val width = yfApi?.yfgetScreenWidth() ?: 0
             val height = yfApi?.yfgetScreenHeight() ?: 0
             if (width > 0 && height > 0) "${width}×${height}" else "Unknown"
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             "Unknown"
         }
     }
@@ -248,7 +311,7 @@ fun SystemSettingsTabContent(
     val ramSize = remember {
         try {
             yfApi?.yfgetRAMSize() ?: "Unknown"
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             "Unknown"
         }
     }
@@ -256,38 +319,9 @@ fun SystemSettingsTabContent(
     val storageSize = remember {
         try {
             yfApi?.yfgetInternalStorageMemory() ?: "Unknown"
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             "Unknown"
         }
-    }
-
-    var showRebootConfirm by remember { mutableStateOf(false) }
-
-    if (showRebootConfirm) {
-        AlertDialog(
-            onDismissRequest = { showRebootConfirm = false },
-            title = { Text(stringResource(R.string.confirm_reboot_title)) },
-            text = { Text(stringResource(R.string.confirm_reboot_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showRebootConfirm = false
-                        onReboot()
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text(stringResource(R.string.button_reboot_confirm), fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRebootConfirm = false }) {
-                    Text(stringResource(R.string.button_cancel_reboot))
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 
     Column(
@@ -357,6 +391,27 @@ fun SystemSettingsTabContent(
                     )
                     Text(
                         text = firmwareVersion,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = stringResource(R.string.hardware_model_label),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = hardwareModel,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Medium,
@@ -442,54 +497,263 @@ fun SystemSettingsTabContent(
         }
 
         Spacer(Modifier.height(32.dp))
+    }
+}
+
+@Composable
+fun SystemSettingsTabContent(
+    context: Context,
+    onReboot: () -> Unit,
+    onOpenSettings: () -> Unit
+) {
+    var showRebootConfirm by remember { mutableStateOf(false) }
+
+    if (showRebootConfirm) {
+        @Suppress("UNUSED_VALUE")
+        AlertDialog(
+            onDismissRequest = { showRebootConfirm = false },
+            title = { Text(stringResource(R.string.confirm_reboot_title)) },
+            text = { Text(stringResource(R.string.confirm_reboot_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showRebootConfirm = false
+                        onReboot()
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.button_reboot_confirm), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRebootConfirm = false }) {
+                    Text(stringResource(R.string.button_cancel_reboot))
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 48.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
+        Spacer(Modifier.height(24.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 300.dp)
+                .align(Alignment.CenterHorizontally),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = stringResource(R.string.button_wifi_settings),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                
+                Button(
+                    onClick = {
+                        val wifiIntent = Intent(Settings.ACTION_WIFI_SETTINGS).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        context.startActivity(wifiIntent)
+                    },
+                    modifier = Modifier.height(36.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary,
+                        contentColor = Color.White
+                    ),
+                    shape = MaterialTheme.shapes.small,
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    Text(
+                        text = "设置",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 300.dp)
+                .align(Alignment.CenterHorizontally),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = stringResource(R.string.button_adjust_volume),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                
+                Button(
+                    onClick = {
+                        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                        audioManager.adjustStreamVolume(
+                            AudioManager.STREAM_MUSIC,
+                            AudioManager.ADJUST_SAME,
+                            AudioManager.FLAG_SHOW_UI
+                        )
+                    },
+                    modifier = Modifier.height(36.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = Color.White
+                    ),
+                    shape = MaterialTheme.shapes.small,
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    Text(
+                        text = "调节",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+
+        if (KioskConfig.SHOW_SYSTEM_SETTINGS_BUTTON) {
+            Spacer(Modifier.height(10.dp))
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 300.dp)
+                    .align(Alignment.CenterHorizontally),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = stringResource(R.string.button_open_system_settings),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    
+                    Button(
+                        onClick = onOpenSettings,
+                        modifier = Modifier.height(36.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White
+                        ),
+                        shape = MaterialTheme.shapes.small,
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        Text(
+                            text = "打开",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
 
         Button(
             onClick = { showRebootConfirm = true },
             modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+                .widthIn(max = 300.dp)
+                .height(40.dp)
+                .align(Alignment.CenterHorizontally),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.error,
                 contentColor = Color.White
             ),
-            contentPadding = PaddingValues(vertical = 16.dp, horizontal = 24.dp)
+            shape = MaterialTheme.shapes.medium,
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
         ) {
             Text(
                 stringResource(R.string.button_reboot),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
             )
         }
 
-        Spacer(Modifier.height(16.dp))
-
-        Button(
-            onClick = onOpenSettings,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White
-            ),
-            contentPadding = PaddingValues(vertical = 16.dp, horizontal = 24.dp)
-        ) {
-            Text(
-                stringResource(R.string.button_open_system_settings),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White
-            )
-        }
-
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
 
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            )
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Text(
@@ -530,31 +794,56 @@ fun GeneralSettingsTab(
     ) {
         Spacer(Modifier.height(24.dp))
 
-        SettingsField(
-            label = stringResource(R.string.settings_kiosk_url_label),
-            description = stringResource(R.string.settings_kiosk_url_desc),
+        OutlinedTextField(
             value = kioskUrl,
             onValueChange = onKioskUrlChange,
-            placeholder = stringResource(R.string.settings_kiosk_url_placeholder),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
+            label = { Text(stringResource(R.string.settings_kiosk_url_label)) },
+            placeholder = { Text(stringResource(R.string.settings_kiosk_url_placeholder)) },
+            supportingText = { Text(stringResource(R.string.settings_kiosk_url_desc)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = false,
+            maxLines = 3,
+            shape = MaterialTheme.shapes.small,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                focusedSupportingTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unfocusedSupportingTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         )
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
 
-        SettingsField(
-            label = stringResource(R.string.settings_check_interval_label),
-            description = stringResource(R.string.settings_check_interval_desc),
+        OutlinedTextField(
             value = checkIntervalSeconds,
             onValueChange = { newValue ->
-                if (newValue.isEmpty() || newValue.matches(Regex("\\d*"))) {
+                if (newValue.isBlank() || newValue.matches(Regex("\\d*"))) {
                     onCheckIntervalChange(newValue)
                     onCheckIntervalErrorChange(null)
                 }
             },
-            placeholder = stringResource(R.string.settings_check_interval_placeholder),
+            label = { Text(stringResource(R.string.settings_check_interval_label)) },
+            placeholder = { Text(stringResource(R.string.settings_check_interval_placeholder)) },
+            supportingText = { 
+                Text(
+                    checkIntervalError ?: stringResource(R.string.settings_check_interval_supporting),
+                    color = if (checkIntervalError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
             isError = checkIntervalError != null,
-            supportingText = checkIntervalError ?: stringResource(R.string.settings_check_interval_supporting)
+            shape = MaterialTheme.shapes.small,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = if (checkIntervalError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedLabelColor = if (checkIntervalError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         )
 
         Spacer(Modifier.height(32.dp))
@@ -578,7 +867,7 @@ fun GeneralSettingsTab(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             FilterChip(
                 selected = userAgentType == UserAgentType.DESKTOP,
@@ -596,7 +885,19 @@ fun GeneralSettingsTab(
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                ),
+                border = if (userAgentType == UserAgentType.DESKTOP) {
+                    FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = true,
+                        borderColor = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = false
+                    )
+                }
             )
 
             FilterChip(
@@ -615,9 +916,23 @@ fun GeneralSettingsTab(
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                ),
+                border = if (userAgentType == UserAgentType.MOBILE) {
+                    FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = true,
+                        borderColor = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = false
+                    )
+                }
             )
         }
+
+        Spacer(Modifier.height(24.dp))
     }
 }
 
@@ -640,11 +955,9 @@ fun DisplaySettingsTab(
 
         RotationSelector(rotation = rotation, onRotationChange = onRotationChange)
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
 
-        SettingsField(
-            label = stringResource(R.string.settings_idle_timeout_label),
-            description = stringResource(R.string.settings_idle_timeout_desc),
+        OutlinedTextField(
             value = idleTimeout,
             onValueChange = {
                 if (it.matches(Regex("\\d*"))) {
@@ -652,11 +965,30 @@ fun DisplaySettingsTab(
                     onIdleTimeoutErrorChange(null)
                 }
             },
-            placeholder = stringResource(R.string.seconds_before_dimming),
+            label = { Text(stringResource(R.string.settings_idle_timeout_label)) },
+            placeholder = { Text(stringResource(R.string.seconds_before_dimming)) },
+            supportingText = { 
+                if (idleTimeoutError != null) {
+                    Text(
+                        idleTimeoutError,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
             isError = idleTimeoutError != null,
-            supportingText = idleTimeoutError
+            shape = MaterialTheme.shapes.small,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = if (idleTimeoutError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedLabelColor = if (idleTimeoutError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         )
+
+        Spacer(Modifier.height(24.dp))
     }
 }
 
@@ -679,9 +1011,7 @@ fun BrightnessSettingsTab(
     ) {
         Spacer(Modifier.height(24.dp))
 
-        SettingsField(
-            label = stringResource(R.string.settings_idle_brightness_label),
-            description = stringResource(R.string.settings_idle_brightness_desc),
+        OutlinedTextField(
             value = idleBrightness,
             onValueChange = {
                 if (it.matches(Regex("\\d*"))) {
@@ -689,17 +1019,32 @@ fun BrightnessSettingsTab(
                     onIdleBrightnessErrorChange(null)
                 }
             },
-            placeholder = "0–100",
+            label = { Text(stringResource(R.string.settings_idle_brightness_label)) },
+            placeholder = { Text("0–100") },
+            supportingText = { 
+                if (idleBrightnessError != null) {
+                    Text(
+                        idleBrightnessError,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
             isError = idleBrightnessError != null,
-            supportingText = idleBrightnessError
+            shape = MaterialTheme.shapes.small,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = if (idleBrightnessError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedLabelColor = if (idleBrightnessError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         )
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
 
-        SettingsField(
-            label = stringResource(R.string.settings_active_brightness_label),
-            description = stringResource(R.string.settings_active_brightness_desc),
+        OutlinedTextField(
             value = activeBrightness,
             onValueChange = {
                 if (it.matches(Regex("\\d*"))) {
@@ -707,92 +1052,29 @@ fun BrightnessSettingsTab(
                     onActiveBrightnessErrorChange(null)
                 }
             },
-            placeholder = "0–100",
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            isError = activeBrightnessError != null,
-            supportingText = activeBrightnessError
-        )
-    }
-}
-
-@Composable
-fun ChangePasswordDialog(
-    currentPassword: String,
-    onDismiss: () -> Unit,
-    onPasswordSaved: (String) -> Unit
-) {
-    var oldPassword by remember { mutableStateOf("") }
-    var newPassword by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("修改管理员密码") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = oldPassword,
-                    onValueChange = { oldPassword = it; error = null },
-                    label = { Text("当前密码") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                OutlinedTextField(
-                    value = newPassword,
-                    onValueChange = { newPassword = it; error = null },
-                    label = { Text("新密码") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                OutlinedTextField(
-                    value = confirmPassword,
-                    onValueChange = { confirmPassword = it; error = null },
-                    label = { Text("确认新密码") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    singleLine = true,
-                    isError = error != null,
-                    supportingText = { if (error != null) Text(error!!) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    if (currentPassword.isNotEmpty() && oldPassword != currentPassword) {
-                        error = "当前密码错误"
-                        return@TextButton
-                    }
-                    
-                    if (newPassword.isEmpty()) {
-                        error = "新密码不能为空"
-                        return@TextButton
-                    }
-                    
-                    if (newPassword != confirmPassword) {
-                        error = "两次输入的新密码不一致"
-                        return@TextButton
-                    }
-                    
-                    onPasswordSaved(newPassword)
+            label = { Text(stringResource(R.string.settings_active_brightness_label)) },
+            placeholder = { Text("0–100") },
+            supportingText = { 
+                if (activeBrightnessError != null) {
+                    Text(
+                        activeBrightnessError,
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
-            ) {
-                Text("保存")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
+            },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            isError = activeBrightnessError != null,
+            shape = MaterialTheme.shapes.small,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = if (activeBrightnessError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedLabelColor = if (activeBrightnessError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        )
+
+        Spacer(Modifier.height(24.dp))
+    }
 }

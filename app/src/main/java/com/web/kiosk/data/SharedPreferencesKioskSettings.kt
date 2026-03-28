@@ -14,6 +14,8 @@ class SharedPreferencesKioskSettings(context: Context) : KioskSettings {
     private val keyIdleTimeout = "idle_timeout"
     private val keyIdleBrightness = "idle_brightness"
     private val keyActiveBrightness = "active_brightness"
+    private val keyVolume = "volume"
+    private val keyShowSystemSettingsButton = "show_system_settings_button"
 
     override fun getCheckInterval(): Flow<Long> = callbackFlow {
         val key = "check_interval"
@@ -135,6 +137,19 @@ class SharedPreferencesKioskSettings(context: Context) : KioskSettings {
         prefs.edit { putString("user_agent_type", type.value) }
     }
     
+    override fun getVolume(): Flow<Int> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
+            if (changedKey == keyVolume) trySend(prefs.getInt(keyVolume, 50))
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getInt(keyVolume, 50))
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }.distinctUntilChanged()
+    
+    override suspend fun setVolume(volume: Int) {
+        prefs.edit { putInt(keyVolume, volume.coerceIn(0, 100)) }
+    }
+    
     override fun getPassword(): Flow<String> = callbackFlow {
         val key = "admin_password"
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
@@ -171,4 +186,19 @@ class SharedPreferencesKioskSettings(context: Context) : KioskSettings {
         trySend(value.isNotEmpty())
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }.distinctUntilChanged()
+    
+    fun isShowSystemSettingsButton(): Flow<Boolean> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
+            if (changedKey == keyShowSystemSettingsButton) {
+                trySend(prefs.getBoolean(keyShowSystemSettingsButton, true))
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getBoolean(keyShowSystemSettingsButton, true))
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }.distinctUntilChanged()
+    
+    suspend fun setShowSystemSettingsButton(show: Boolean) {
+        prefs.edit { putBoolean(keyShowSystemSettingsButton, show) }
+    }
 }

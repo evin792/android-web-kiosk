@@ -1,25 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Web Kiosk</string>
 
     <!-- Settings Screen -->
-    <string name="settings_title">Kiosk设置</string>
-    <string name="settings_kiosk_url_label">Kiosk网址</string>
-    <string name="settings_kiosk_url_desc">这是在Kiosk模式下显示的唯一网页。</string>
-    <string name="settings_kiosk_url_placeholder">https://screenlite.org</string>
+    <string name="settings_title">信息亭设置</string>
+    <string name="settings_kiosk_url_label">信息亭网址</string>
+    <string name="settings_kiosk_url_desc">这是在信息亭模式下显示的唯一网页。</string>
+    <string name="settings_kiosk_url_placeholder">https://www.bing.com</string>
 
     <string name="settings_check_interval_label">应用检查间隔（秒）</string>
-    <string name="settings_check_interval_desc">服务检查Kiosk是否正在运行的频率。如果关闭，将自动重启。</string>
+    <string name="settings_check_interval_desc">服务验证信息亭是否处于活动状态的频率。如果关闭，将自动重启。</string>
     <string name="settings_check_interval_placeholder">例如：30</string>
-    <string name="settings_check_interval_supporting">最小: 1，最大: 99999</string>
+    <string name="settings_check_interval_supporting">最小值：1，最大值：99999</string>
     <string name="settings_check_interval_empty">间隔不能为空</string>
     <string name="settings_check_interval_invalid">请输入 1 到 99999 之间的值</string>
 
     <string name="settings_rotation_label">屏幕旋转</string>
 
     <!-- Tab Labels -->
-    <string name="tab_general">通用</string>
+    <string name="tab_general">常规</string>
     <string name="tab_display">显示</string>
     <string name="tab_brightness">亮度</string>
+    <string name="tab_info">信息</string>
     <string name="tab_system">系统</string>
 
     <!-- Buttons -->
@@ -27,7 +29,7 @@
     <string name="button_save">保存</string>
 
     <string name="settings_idle_timeout_label">空闲超时（秒）</string>
-    <string name="settings_idle_timeout_desc">屏幕因不活动而变暗前的时间。</string>
+    <string name="settings_idle_timeout_desc">屏幕因不活动而变暗之前的时间。</string>
     <string name="seconds_before_dimming">变暗前的秒数</string>
 
     <string name="settings_idle_brightness_label">空闲亮度 (%)</string>
@@ -36,27 +38,35 @@
     <string name="settings_active_brightness_label">活动亮度 (%)</string>
     <string name="settings_active_brightness_desc">设备使用时的亮度级别。100 = 最高。</string>
 
+    <string name="settings_volume_label">音量 (%)</string>
+    <string name="settings_volume_desc">系统音量级别。0 = 静音，100 = 最大。</string>
+
     <string name="settings_user_agent_type_label">浏览器模式</string>
-    <string name="settings_user_agent_type_desc">选择网页的显示方式。</string>
-    <string name="settings_user_agent_mobile">手机</string>
-    <string name="settings_user_agent_desktop">桌面</string>
+    <string name="settings_user_agent_type_desc">选择如何显示网站。</string>
+    <string name="settings_user_agent_mobile">移动版</string>
+    <string name="settings_user_agent_desktop">桌面版</string>
 
     <!-- System Settings Tab -->
     <string name="info_title">信息</string>
     <string name="app_version_label">应用版本</string>
-    <string name="firmware_label">固件版本</string>
+    <string name="firmware_label">系统版本</string>
     <string name="device_id_label">设备 ID</string>
-    <string name="resolution_label">屏幕分辨率</string>
+    <string name="hardware_model_label">硬件型号</string>
+    <string name="resolution_label">分辨率</string>
     <string name="ram_label">运行内存</string>
     <string name="storage_label">存储空间</string>
     <string name="button_reboot">🔄 重启设备</string>
-    <string name="button_open_system_settings">⚙️ 打开系统设置</string>
+    <string name="button_open_system_settings">⚙️ 系统设置</string>
+    <string name="button_wifi_settings">🛜 WiFi 设置</string>
+    <string name="button_adjust_volume">🔊 调节音量</string>
+    <string name="dialog_volume_title">调节系统音量</string>
+    <string name="button_confirm">确认</string>
     <string name="warning_title">⚠️ 警告</string>
-    <string name="warning_message">• 重启将立即重新启动设备\n• 系统设置允许配置 Android 系统选项\n• 按返回键返回信息亭</string>
+    <string name="warning_message">• 重启将立即重新启动设备\n• 按返回键返回信息亭</string>
     <string name="confirm_reboot_title">确认重启</string>
-    <string name="confirm_reboot_message">设备将立即重启。确定继续吗？</string>
+    <string name="confirm_reboot_message">设备将立即重启。继续？</string>
     <string name="button_reboot_confirm">重启</string>
     <string name="button_cancel_reboot">取消</string>
 
-    <string name="settings_invalid">请输入有效值</string>
+    <string name="settings_invalid">请输入有效的值</string>
 </resources>

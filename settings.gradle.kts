@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Screenlite Web Kiosk"
+rootProject.name = "Web Kiosk"
 include(":app")
  
