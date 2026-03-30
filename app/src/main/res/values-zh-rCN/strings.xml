@@ -16,10 +16,11 @@
     <string name="settings_check_interval_invalid">请输入 1 到 99999 之间的值</string>
 
     <string name="settings_rotation_label">屏幕旋转</string>
+    <string name="settings_rotation_note">⚠️ 此设置仅影响浏览器的显示方向。如需调整系统屏幕旋转方向，请前往 系统 → 显示 设置。</string>
 
     <!-- Tab Labels -->
     <string name="tab_general">常规</string>
-    <string name="tab_display">显示</string>
+    <string name="tab_app_rotation">旋转</string>
     <string name="tab_brightness">亮度</string>
     <string name="tab_info">信息</string>
     <string name="tab_system">系统</string>
@@ -27,6 +28,8 @@
     <!-- Buttons -->
     <string name="button_cancel">取消</string>
     <string name="button_save">保存</string>
+    <string name="button_set">设置</string>
+    <string name="button_open">打开</string>
 
     <string name="settings_idle_timeout_label">空闲超时（秒）</string>
     <string name="settings_idle_timeout_desc">屏幕因不活动而变暗之前的时间。</string>
@@ -34,6 +37,7 @@
 
     <string name="settings_idle_brightness_label">空闲亮度 (%)</string>
     <string name="settings_idle_brightness_desc">设备空闲时的亮度级别。0 = 最低。</string>
+    <string name="settings_brightness_note">⚠️ 这些亮度设置仅在应用超时后生效。如需调整系统屏幕亮度，请前往 系统 → 显示 设置。</string>
 
     <string name="settings_active_brightness_label">活动亮度 (%)</string>
     <string name="settings_active_brightness_desc">设备使用时的亮度级别。100 = 最高。</string>
@@ -43,7 +47,6 @@
 
     <string name="settings_user_agent_type_label">浏览器模式</string>
     <string name="settings_user_agent_type_desc">选择如何显示网站。</string>
-    <string name="settings_user_agent_mobile">移动版</string>
     <string name="settings_user_agent_desktop">桌面版</string>
 
     <!-- System Settings Tab -->
@@ -55,11 +58,29 @@
     <string name="resolution_label">分辨率</string>
     <string name="ram_label">运行内存</string>
     <string name="storage_label">存储空间</string>
-    <string name="button_reboot">🔄 重启设备</string>
-    <string name="button_open_system_settings">⚙️ 系统设置</string>
-    <string name="button_wifi_settings">🛜 WiFi 设置</string>
-    <string name="button_adjust_volume">🔊 调节音量</string>
+    <string name="button_reboot">重启设备</string>
+    <string name="button_open_system_settings">系统设置</string>
+    <string name="button_wifi_settings">WiFi 设置</string>
+    <string name="button_adjust_volume">调节音量</string>
+    <string name="button_screen_brightness">屏幕亮度</string>
+    <string name="button_system_display">显示设置</string>
     <string name="dialog_volume_title">调节系统音量</string>
+
+    <!-- Watchdog Settings -->
+    <string name="watchdog_title">看门狗设置</string>
+    <string name="watchdog_description">启用后系统将定期刷新防止休眠</string>
+    <string name="usb_mode_title">USB 模式</string>
+    <string name="usb_mode_current">当前模式：%1$s</string>
+    <string name="usb_mode_host">主机模式</string>
+    <string name="usb_mode_otg">OTG 模式</string>
+    <string name="usb_mode_switch_hint">在主控和 OTG 模式之间切换</string>
+    <string name="watchdog_enable">启用看门狗</string>
+    <string name="watchdog_feed_interval">喂狗间隔 (秒)</string>
+    <string name="seconds_unit">例如：60</string>
+    <string name="watchdog_interval_range">最小值：1，最大值：9999</string>
+    <string name="watchdog_last_feed">上次喂狗</string>
+    <string name="watchdog_next_feed">下次喂狗</string>
+
     <string name="button_confirm">确认</string>
     <string name="warning_title">⚠️ 警告</string>
     <string name="warning_message">• 重启将立即重新启动设备\n• 按返回键返回信息亭</string>

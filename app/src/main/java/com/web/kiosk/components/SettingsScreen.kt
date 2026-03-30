@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import android.provider.Settings
+import android.util.Log
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -43,6 +45,7 @@ import com.youngfeel.yf_rk356x_api.YF_RK356x_API_Manager
 fun SettingsScreen() {
     val context = LocalContext.current
     val kioskSettings = remember { KioskSettingsFactory.get(context) }
+    val activity = context as? ComponentActivity
 
     var kioskUrl by remember { mutableStateOf("") }
     var checkIntervalSeconds by remember { mutableStateOf("") }
@@ -51,15 +54,19 @@ fun SettingsScreen() {
     var idleBrightness by remember { mutableStateOf("") }
     var activeBrightness by remember { mutableStateOf("") }
     var userAgentType by remember { mutableStateOf(UserAgentType.DESKTOP) }
+    var watchdogEnabled by remember { mutableStateOf(false) }
+    var watchdogFeedInterval by remember { mutableStateOf("30") }
+    var usbMode by remember { mutableStateOf("host") }
 
     var checkIntervalError by remember { mutableStateOf<String?>(null) }
     var idleTimeoutError by remember { mutableStateOf<String?>(null) }
     var idleBrightnessError by remember { mutableStateOf<String?>(null) }
     var activeBrightnessError by remember { mutableStateOf<String?>(null) }
+    var watchdogFeedIntervalError by remember { mutableStateOf<String?>(null) }
 
     val tabs = listOf(
         stringResource(R.string.tab_general),
-        stringResource(R.string.tab_display),
+        stringResource(R.string.tab_app_rotation),
         stringResource(R.string.tab_brightness),
         stringResource(R.string.tab_system),
         stringResource(R.string.tab_info)
@@ -84,6 +91,18 @@ fun SettingsScreen() {
         idleBrightness = kioskSettings.getIdleBrightness().first().toString()
         activeBrightness = kioskSettings.getActiveBrightness().first().toString()
         userAgentType = kioskSettings.getUserAgentType().first()
+        watchdogEnabled = kioskSettings.getWatchdogEnabled().first()
+        watchdogFeedInterval = (kioskSettings.getWatchdogFeedInterval().first() / 1000).toString()
+        usbMode = kioskSettings.getUsbMode().first()
+    }
+
+    fun hideKeyboard() {
+        activity?.let {
+            val imm = it.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            it.currentFocus?.let { view ->
+                imm.hideSoftInputFromWindow(view.windowToken, 0)
+            }
+        }
     }
 
     Scaffold(
@@ -158,6 +177,19 @@ fun SettingsScreen() {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK
                             context.startActivity(this)
                         }
+                    },
+                    watchdogEnabled = watchdogEnabled,
+                    onWatchdogEnabledChange = { watchdogEnabled = it },
+                    watchdogFeedInterval = watchdogFeedInterval,
+                    onWatchdogFeedIntervalChange = { watchdogFeedInterval = it },
+                    watchdogFeedIntervalError = watchdogFeedIntervalError,
+                    onWatchdogFeedIntervalErrorChange = { watchdogFeedIntervalError = it },
+                    usbMode = usbMode,
+                    onUsbModeChange = { newMode ->
+                        usbMode = newMode
+                        activity?.lifecycleScope?.launch {
+                            kioskSettings.setUsbMode(newMode)
+                        }
                     }
                 )
                 4 -> InfoSettingsTab(
@@ -174,7 +206,10 @@ fun SettingsScreen() {
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.End)
             ) {
                 OutlinedButton(
-                    onClick = { (context as? ComponentActivity)?.finish() },
+                    onClick = { 
+                        hideKeyboard()
+                        activity?.finish() 
+                    },
                     modifier = Modifier
                         .widthIn(min = 120.dp)
                         .height(40.dp),
@@ -209,9 +244,14 @@ fun SettingsScreen() {
                         val activeBrightnessValue = activeBrightness.toIntOrNull()
                         if (activeBrightnessValue == null || activeBrightnessValue !in 0..100) { activeBrightnessError = "0–100"; hasError = true }
 
+                        val watchdogFeedIntervalValue = watchdogFeedInterval.toLongOrNull()
+                        if (watchdogEnabled && (watchdogFeedIntervalValue == null || watchdogFeedIntervalValue !in 1..99999)) { watchdogFeedIntervalError = "1-99999"; hasError = true }
+
                         if (hasError) return@Button
 
-                        (context as? ComponentActivity)?.lifecycleScope?.launch {
+                        hideKeyboard()
+
+                        activity?.lifecycleScope?.launch {
                             kioskSettings.setCheckInterval(checkIntervalValue!! * 1000L)
                             kioskSettings.setStartUrl(kioskUrl)
                             kioskSettings.setRotation(rotation)
@@ -219,10 +259,13 @@ fun SettingsScreen() {
                             kioskSettings.setIdleBrightness(idleBrightnessValue!!)
                             kioskSettings.setActiveBrightness(activeBrightnessValue!!)
                             kioskSettings.setUserAgentType(userAgentType)
+                            kioskSettings.setWatchdogEnabled(watchdogEnabled)
+                            kioskSettings.setWatchdogFeedInterval(watchdogFeedIntervalValue!! * 1000L)
+                            kioskSettings.setUsbMode(usbMode)
 
                             StayOnTopService.restart(context)
                         }
-                        (context as? ComponentActivity)?.finish()
+                        activity?.finish()
                     },
                     modifier = Modifier
                         .widthIn(min = 120.dp)
@@ -504,9 +547,39 @@ fun InfoSettingsTab(context: Context) {
 fun SystemSettingsTabContent(
     context: Context,
     onReboot: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    watchdogEnabled: Boolean = false,
+    onWatchdogEnabledChange: ((Boolean) -> Unit)? = null,
+    watchdogFeedInterval: String = "30",
+    onWatchdogFeedIntervalChange: ((String) -> Unit)? = null,
+    watchdogFeedIntervalError: String? = null,
+    onWatchdogFeedIntervalErrorChange: ((String?) -> Unit)? = null,
+    usbMode: String = "host",
+    onUsbModeChange: ((String) -> Unit)? = null
 ) {
     var showRebootConfirm by remember { mutableStateOf(false) }
+    var isSwitchingUsbMode by remember { mutableStateOf(false) }
+
+    fun switchUsbMode(mode: String) {
+        if (isSwitchingUsbMode) return
+        
+        isSwitchingUsbMode = true
+        try {
+            val success = YfBroadcast.yfSetUsbMode(context, mode)
+
+            if (success) {
+                // 保存到设置
+                onUsbModeChange?.invoke(mode)
+                Log.d("SystemSettings", "USB mode switched to: $mode successfully")
+            } else {
+                Log.e("SystemSettings", "Failed to switch USB mode")
+            }
+        } catch (e: Exception) {
+            Log.e("SystemSettings", "Error switching USB mode", e)
+        } finally {
+            isSwitchingUsbMode = false
+        }
+    }
 
     if (showRebootConfirm) {
         @Suppress("UNUSED_VALUE")
@@ -545,6 +618,120 @@ fun SystemSettingsTabContent(
         Spacer(Modifier.height(24.dp))
 
         Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = stringResource(R.string.watchdog_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.watchdog_enable),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(R.string.watchdog_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Switch(
+                        checked = watchdogEnabled,
+                        onCheckedChange = { onWatchdogEnabledChange?.invoke(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = watchdogFeedInterval,
+                    onValueChange = { newValue ->
+                        if (newValue.isBlank() || newValue.matches(Regex("\\d*"))) {
+                            onWatchdogFeedIntervalChange?.invoke(newValue)
+                            onWatchdogFeedIntervalErrorChange?.invoke(null)
+                        }
+                    },
+                    label = { Text(stringResource(R.string.watchdog_feed_interval)) },
+                    placeholder = { Text(stringResource(R.string.seconds_unit)) },
+                    supportingText = {
+                        Text(
+                            watchdogFeedIntervalError ?: stringResource(R.string.watchdog_interval_range),
+                            color = if (watchdogFeedIntervalError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = watchdogFeedIntervalError != null,
+                    shape = MaterialTheme.shapes.small,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = if (watchdogFeedIntervalError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedLabelColor = if (watchdogFeedIntervalError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    enabled = watchdogEnabled
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    Text(
+                        text = "${stringResource(R.string.watchdog_last_feed)}: --:--:--",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    Text(
+                        text = "${stringResource(R.string.watchdog_next_feed)}: --:--:--",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .widthIn(max = 300.dp)
@@ -561,24 +748,12 @@ fun SystemSettingsTabContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        text = stringResource(R.string.button_wifi_settings),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                
+                Text(
+                    text = stringResource(R.string.button_wifi_settings),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
                 Button(
                     onClick = {
                         val wifiIntent = Intent(Settings.ACTION_WIFI_SETTINGS).apply {
@@ -588,14 +763,14 @@ fun SystemSettingsTabContent(
                     },
                     modifier = Modifier.height(36.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.tertiary,
-                        contentColor = Color.White
+                        containerColor = Color.White,
+                        contentColor = MaterialTheme.colorScheme.onSurface
                     ),
                     shape = MaterialTheme.shapes.small,
                     contentPadding = PaddingValues(horizontal = 16.dp)
                 ) {
                     Text(
-                        text = "设置",
+                        text = stringResource(R.string.button_set),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -622,24 +797,12 @@ fun SystemSettingsTabContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        text = stringResource(R.string.button_adjust_volume),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                
+                Text(
+                    text = stringResource(R.string.button_adjust_volume),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
                 Button(
                     onClick = {
                         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -651,17 +814,93 @@ fun SystemSettingsTabContent(
                     },
                     modifier = Modifier.height(36.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary,
-                        contentColor = Color.White
+                        containerColor = Color.White,
+                        contentColor = MaterialTheme.colorScheme.onSurface
                     ),
                     shape = MaterialTheme.shapes.small,
                     contentPadding = PaddingValues(horizontal = 16.dp)
                 ) {
                     Text(
-                        text = "调节",
+                        text = stringResource(R.string.button_set),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
+                }
+
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 300.dp)
+                .align(Alignment.CenterHorizontally),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.usb_mode_title),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(R.string.usb_mode_switch_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = { switchUsbMode("host") },
+                        enabled = !isSwitchingUsbMode,
+                        modifier = Modifier.height(36.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (usbMode == "host") MaterialTheme.colorScheme.primary else Color.White,
+                            contentColor = if (usbMode == "host") Color.White else MaterialTheme.colorScheme.onSurface
+                        ),
+                        shape = MaterialTheme.shapes.small,
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.usb_mode_host),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    Button(
+                        onClick = { switchUsbMode("otg") },
+                        enabled = !isSwitchingUsbMode,
+                        modifier = Modifier.height(36.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (usbMode == "otg") MaterialTheme.colorScheme.primary else Color.White,
+                            contentColor = if (usbMode == "otg") Color.White else MaterialTheme.colorScheme.onSurface
+                        ),
+                        shape = MaterialTheme.shapes.small,
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.usb_mode_otg),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }
@@ -686,24 +925,12 @@ fun SystemSettingsTabContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            text = stringResource(R.string.button_open_system_settings),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    
+                    Text(
+                        text = stringResource(R.string.button_open_system_settings),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
                     Button(
                         onClick = onOpenSettings,
                         modifier = Modifier.height(36.dp),
@@ -715,12 +942,66 @@ fun SystemSettingsTabContent(
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
                         Text(
-                            text = "打开",
+                            text = stringResource(R.string.button_open),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium
                         )
                     }
                 }
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 300.dp)
+                .align(Alignment.CenterHorizontally),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.button_system_display),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Button(
+                    onClick = {
+                        try {
+                            val intent = Intent(Settings.ACTION_DISPLAY_SETTINGS).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            context.startActivity(intent)
+                        } catch (_: Exception) {
+                            Log.e("SystemSettings", "Failed to open display settings")
+                        }
+                    },
+                    modifier = Modifier.height(36.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    shape = MaterialTheme.shapes.small,
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.button_set),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
             }
         }
 
@@ -827,7 +1108,7 @@ fun GeneralSettingsTab(
             },
             label = { Text(stringResource(R.string.settings_check_interval_label)) },
             placeholder = { Text(stringResource(R.string.settings_check_interval_placeholder)) },
-            supportingText = { 
+            supportingText = {
                 Text(
                     checkIntervalError ?: stringResource(R.string.settings_check_interval_supporting),
                     color = if (checkIntervalError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
@@ -867,12 +1148,18 @@ fun GeneralSettingsTab(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FilterChip(
                 selected = userAgentType == UserAgentType.DESKTOP,
                 onClick = { onUserAgentTypeChange(UserAgentType.DESKTOP) },
-                label = { Text("💻 " + stringResource(R.string.settings_user_agent_desktop)) },
+                label = {
+                    Text(
+                        "💻 " + stringResource(R.string.settings_user_agent_desktop),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
                 leadingIcon = if (userAgentType == UserAgentType.DESKTOP) {
                     {
                         Icon(
@@ -897,41 +1184,12 @@ fun GeneralSettingsTab(
                         enabled = true,
                         selected = false
                     )
-                }
+                },
+                modifier = Modifier.widthIn(max = 150.dp)
             )
 
-            FilterChip(
-                selected = userAgentType == UserAgentType.MOBILE,
-                onClick = { onUserAgentTypeChange(UserAgentType.MOBILE) },
-                label = { Text("📱 " + stringResource(R.string.settings_user_agent_mobile)) },
-                leadingIcon = if (userAgentType == UserAgentType.MOBILE) {
-                    {
-                        Icon(
-                            imageVector = Icons.Filled.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                } else null,
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                border = if (userAgentType == UserAgentType.MOBILE) {
-                    FilterChipDefaults.filterChipBorder(
-                        enabled = true,
-                        selected = true,
-                        borderColor = MaterialTheme.colorScheme.primary
-                    )
-                } else {
-                    FilterChipDefaults.filterChipBorder(
-                        enabled = true,
-                        selected = false
-                    )
-                }
-            )
+            Spacer(Modifier.height(24.dp))
         }
-
         Spacer(Modifier.height(24.dp))
     }
 }
@@ -953,6 +1211,15 @@ fun DisplaySettingsTab(
     ) {
         Spacer(Modifier.height(24.dp))
 
+        Text(
+            text = stringResource(R.string.settings_rotation_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            lineHeight = 18.sp
+        )
+
+        Spacer(Modifier.height(20.dp))
+
         RotationSelector(rotation = rotation, onRotationChange = onRotationChange)
 
         Spacer(Modifier.height(24.dp))
@@ -967,7 +1234,7 @@ fun DisplaySettingsTab(
             },
             label = { Text(stringResource(R.string.settings_idle_timeout_label)) },
             placeholder = { Text(stringResource(R.string.seconds_before_dimming)) },
-            supportingText = { 
+            supportingText = {
                 if (idleTimeoutError != null) {
                     Text(
                         idleTimeoutError,
@@ -1011,6 +1278,15 @@ fun BrightnessSettingsTab(
     ) {
         Spacer(Modifier.height(24.dp))
 
+        Text(
+            text = stringResource(R.string.settings_brightness_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            lineHeight = 18.sp
+        )
+
+        Spacer(Modifier.height(20.dp))
+
         OutlinedTextField(
             value = idleBrightness,
             onValueChange = {
@@ -1021,7 +1297,7 @@ fun BrightnessSettingsTab(
             },
             label = { Text(stringResource(R.string.settings_idle_brightness_label)) },
             placeholder = { Text("0–100") },
-            supportingText = { 
+            supportingText = {
                 if (idleBrightnessError != null) {
                     Text(
                         idleBrightnessError,
@@ -1054,7 +1330,7 @@ fun BrightnessSettingsTab(
             },
             label = { Text(stringResource(R.string.settings_active_brightness_label)) },
             placeholder = { Text("0–100") },
-            supportingText = { 
+            supportingText = {
                 if (activeBrightnessError != null) {
                     Text(
                         activeBrightnessError,

@@ -18,8 +18,6 @@ fun MainScreen(activity: Activity, modifier: Modifier) {
     var currentUserAgentType by remember { mutableStateOf(UserAgentType.DESKTOP) }
     val kioskSettings = remember { KioskSettingsFactory.get(context) }
     
-    var showPasswordDialog by remember { mutableStateOf(false) }
-    var pendingOpenSettings by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         kioskSettings.getStartUrl().collect { newUrl ->
@@ -38,8 +36,7 @@ fun MainScreen(activity: Activity, modifier: Modifier) {
     }
     
     fun openSettings() {
-        pendingOpenSettings = true
-        showPasswordDialog = true
+        activity.startActivity(android.content.Intent(activity, com.web.kiosk.SettingsActivity::class.java))
     }
 
     Log.d(TAG, "MainScreen recomposition: url=" + url + ", userAgentKey=" + userAgentKey + ", currentUserAgentType=" + currentUserAgentType)
@@ -49,17 +46,4 @@ fun MainScreen(activity: Activity, modifier: Modifier) {
         WebViewComponent(url = url, activity = activity, modifier)
     }
     
-    if (showPasswordDialog) {
-        PasswordVerificationDialog(
-            kioskSettings = kioskSettings,
-            onDismiss = { showPasswordDialog = false },
-            onSuccess = {
-                showPasswordDialog = false
-                if (pendingOpenSettings) {
-                    activity.startActivity(android.content.Intent(activity, com.web.kiosk.SettingsActivity::class.java))
-                    pendingOpenSettings = false
-                }
-            }
-        )
-    }
 }

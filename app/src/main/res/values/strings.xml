@@ -16,10 +16,11 @@
     <string name="settings_check_interval_invalid">Enter a value between 1 and 99999</string>
 
     <string name="settings_rotation_label">Screen Rotation</string>
+    <string name="settings_rotation_note">⚠️ This setting only affects the browser display orientation. To change the system screen rotation, please go to System → Display settings.</string>
 
     <!-- Tab Labels -->
     <string name="tab_general">General</string>
-    <string name="tab_display">Display</string>
+    <string name="tab_app_rotation">Rotation</string>
     <string name="tab_brightness">Brightness</string>
     <string name="tab_info">Info</string>
     <string name="tab_system">System</string>
@@ -27,6 +28,8 @@
     <!-- Buttons -->
     <string name="button_cancel">Cancel</string>
     <string name="button_save">Save</string>
+    <string name="button_set">Setting</string>
+    <string name="button_open">Open</string>
 
     <string name="settings_idle_timeout_label">Idle Timeout (seconds)</string>
     <string name="settings_idle_timeout_desc">Time before screen dims when inactive.</string>
@@ -34,6 +37,7 @@
 
     <string name="settings_idle_brightness_label">Idle Brightness (%)</string>
     <string name="settings_idle_brightness_desc">Brightness when device is idle. 0 = minimum.</string>
+    <string name="settings_brightness_note">⚠️ These brightness settings only apply when the app times out. To adjust the system screen brightness, please go to System → Display settings.</string>
 
     <string name="settings_active_brightness_label">Active Brightness (%)</string>
     <string name="settings_active_brightness_desc">Brightness when device is in use. 100 = maximum.</string>
@@ -43,7 +47,6 @@
 
     <string name="settings_user_agent_type_label">Browser Mode</string>
     <string name="settings_user_agent_type_desc">How websites are displayed.</string>
-    <string name="settings_user_agent_mobile">Mobile</string>
     <string name="settings_user_agent_desktop">Desktop</string>
 
     <!-- System Settings Tab -->
@@ -55,11 +58,29 @@
     <string name="resolution_label">Resolution</string>
     <string name="ram_label">RAM</string>
     <string name="storage_label">Storage</string>
-    <string name="button_reboot">🔄 Reboot Device</string>
-    <string name="button_open_system_settings">⚙️ System Settings</string>
-    <string name="button_wifi_settings">🛜 WiFi Settings</string>
-    <string name="button_adjust_volume">🔊 Volume</string>
+    <string name="button_reboot">Reboot Device</string>
+    <string name="button_open_system_settings">System Settings</string>
+    <string name="button_wifi_settings">Wi-Fi Settings</string>
+    <string name="button_adjust_volume">Volume</string>
+    <string name="button_screen_brightness">Brightness</string>
+    <string name="button_system_display">Display</string>
     <string name="dialog_volume_title">Adjust Volume</string>
+
+    <!-- Watchdog Settings -->
+    <string name="watchdog_title">Watchdog Settings</string>
+    <string name="watchdog_description">System will refresh regularly to prevent sleep</string>
+    <string name="usb_mode_title">USB Mode</string>
+    <string name="usb_mode_current">Current Mode: %1$s</string>
+    <string name="usb_mode_host">Host</string>
+    <string name="usb_mode_otg">OTG</string>
+    <string name="usb_mode_switch_hint">Switch between Host and OTG mode</string>
+    <string name="watchdog_enable">Enable Watchdog</string>
+    <string name="watchdog_feed_interval">Feed Interval (seconds)</string>
+    <string name="seconds_unit">e.g., 60</string>
+    <string name="watchdog_interval_range">Min: 1, Max: 9999</string>
+    <string name="watchdog_last_feed">Last Feed</string>
+    <string name="watchdog_next_feed">Next Feed</string>
+
     <string name="button_confirm">Confirm</string>
     <string name="warning_title">⚠️ Warning</string>
     <string name="warning_message">• Reboot will restart device immediately\n• Press Back to return to Kiosk</string>

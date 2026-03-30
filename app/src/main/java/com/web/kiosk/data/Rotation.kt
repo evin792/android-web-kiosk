@@ -5,9 +5,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 enum class Rotation(val degrees: Int) {
@@ -20,15 +20,19 @@ enum class Rotation(val degrees: Int) {
 private val Context.dataStore by preferencesDataStore(name = "kiosk_settings")
 
 class DataStoreKioskSettings(private val context: Context) : KioskSettings {
-    private val keyCheckInterval = longPreferencesKey("check_interval")
     private val keyStartUrl = stringPreferencesKey("start_url")
     private val keyRotation = intPreferencesKey("rotation")
     private val keyIdleTimeout = longPreferencesKey("idle_timeout")
     private val keyIdleBrightness = intPreferencesKey("idle_brightness")
     private val keyActiveBrightness = intPreferencesKey("active_brightness")
     private val keyUserAgentType = stringPreferencesKey("user_agent_type")
-    private val keyPassword = stringPreferencesKey("admin_password")
     private val keyVolume = intPreferencesKey("volume")
+    // USB 模式设置 - USB Mode settings
+    private val keyUsbMode = stringPreferencesKey("usb_mode")
+    // 看门狗设置 - Watchdog settings
+    private val keyCheckInterval = longPreferencesKey("check_interval")
+    private val keyWatchdogEnabled = booleanPreferencesKey("watchdog_enabled")
+    private val keyWatchdogFeedInterval = longPreferencesKey("watchdog_feed_interval")
 
     override fun getCheckInterval(): Flow<Long> {
         return context.dataStore.data.map { prefs ->
@@ -44,7 +48,7 @@ class DataStoreKioskSettings(private val context: Context) : KioskSettings {
 
     override fun getStartUrl(): Flow<String> {
         return context.dataStore.data.map { prefs ->
-            prefs[keyStartUrl] ?: "https://www.bing.com"
+            prefs[keyStartUrl] ?: "https://youku.com"
         }
     }
 
@@ -122,21 +126,38 @@ class DataStoreKioskSettings(private val context: Context) : KioskSettings {
     override suspend fun setVolume(volume: Int) {
         context.dataStore.edit { prefs -> prefs[keyVolume] = volume.coerceIn(0, 100) }
     }
-
-    override fun getPassword(): Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[keyPassword] ?: ""
+    
+    override fun getUsbMode(): Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[keyUsbMode] ?: "host"
     }
-
-    override suspend fun setPassword(password: String) {
-        context.dataStore.edit { prefs -> prefs[keyPassword] = password }
+    
+    override suspend fun setUsbMode(mode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[keyUsbMode] = mode
+        }
     }
-
-    override suspend fun verifyPassword(password: String): Boolean {
-        val storedPassword = context.dataStore.data.first()[keyPassword] ?: ""
-        return storedPassword.isEmpty() || storedPassword == password
+    
+    override fun getWatchdogEnabled(): Flow<Boolean> {
+        return context.dataStore.data.map { prefs ->
+            prefs[keyWatchdogEnabled] ?: false
+        }
     }
-
-    override fun hasPassword(): Flow<Boolean> = context.dataStore.data.map { prefs ->
-        !prefs[keyPassword].isNullOrEmpty()
+    
+    override suspend fun setWatchdogEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[keyWatchdogEnabled] = enabled
+        }
+    }
+    
+    override fun getWatchdogFeedInterval(): Flow<Long> {
+        return context.dataStore.data.map { prefs ->
+            prefs[keyWatchdogFeedInterval] ?: 30_000L
+        }
+    }
+    
+    override suspend fun setWatchdogFeedInterval(interval: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[keyWatchdogFeedInterval] = interval
+        }
     }
 }

@@ -22,11 +22,15 @@ interface KioskSettings {
     fun getVolume(): Flow<Int>
     suspend fun setVolume(volume: Int)
     
-    // 密码管理
-    fun getPassword(): Flow<String>
-    suspend fun setPassword(password: String)
-    suspend fun verifyPassword(password: String): Boolean
-    fun hasPassword(): Flow<Boolean>
+    // 看门狗设置
+    fun getWatchdogEnabled(): Flow<Boolean>
+    suspend fun setWatchdogEnabled(enabled: Boolean)
+    fun getWatchdogFeedInterval(): Flow<Long>
+    suspend fun setWatchdogFeedInterval(interval: Long)
+    
+    // USB 模式设置
+    fun getUsbMode(): Flow<String>
+    suspend fun setUsbMode(mode: String)
 }
 
 enum class UserAgentType(val value: String) {

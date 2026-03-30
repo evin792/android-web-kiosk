@@ -2,10 +2,11 @@ package com.web.kiosk.util
 
 import android.content.Context
 import android.content.Intent
+import com.youngfeel.yf_rk356x_api.YF_RK356x_API_Manager
 
 /**
  * YF-3566/3568 系统广播接口工具类
- * 基于文档：YF-3566/3568广播接口介绍 v1.0.7.20221029
+ * 基于文档：YF-3566/3568 广播接口介绍 v1.0.7.20221029
  *
  * 调用方式：YfBroadcast.yfReboot(context)
  */
@@ -208,4 +209,22 @@ object YfBroadcast {
     }
     fun yfFanControl(context: Context, on: Boolean) = yfSetGpio(context, "fan", on)
     fun yfUsbHostPower(context: Context, on: Boolean) = yfSetGpio(context, "usbhost", on)
+
+    // ================= 26. USB 模式切换 (使用 systemShell) =================
+    /**
+     * 切换 USB 模式为 Host 或 OTG
+     * @param context 上下文
+     * @param mode 模式："host" 或 "otg"
+     * @return 执行是否成功
+     */
+    fun yfSetUsbMode(context: Context, mode: String): Boolean {
+        return try {
+            val yfapi = YF_RK356x_API_Manager(context)
+            val command = "echo $mode > /sys/devices/platform/fe8a0000.usb2-phy/otg_mode"
+            yfapi.systemShell(command)
+        } catch (e: Exception) {
+            android.util.Log.e("YfBroadcast", "Failed to switch USB mode", e)
+            false
+        }
+    }
 }

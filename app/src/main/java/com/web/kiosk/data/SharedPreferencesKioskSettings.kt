@@ -16,6 +16,9 @@ class SharedPreferencesKioskSettings(context: Context) : KioskSettings {
     private val keyActiveBrightness = "active_brightness"
     private val keyVolume = "volume"
     private val keyShowSystemSettingsButton = "show_system_settings_button"
+    private val keyWatchdogEnabled = "watchdog_enabled"
+    private val keyWatchdogFeedInterval = "watchdog_feed_interval"
+    private val keyUsbMode = "usb_mode"
 
     override fun getCheckInterval(): Flow<Long> = callbackFlow {
         val key = "check_interval"
@@ -150,42 +153,50 @@ class SharedPreferencesKioskSettings(context: Context) : KioskSettings {
         prefs.edit { putInt(keyVolume, volume.coerceIn(0, 100)) }
     }
     
-    override fun getPassword(): Flow<String> = callbackFlow {
-        val key = "admin_password"
+    override fun getWatchdogEnabled(): Flow<Boolean> = callbackFlow {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
-            if (changedKey == key) {
-                val value = prefs.getString(key, "") ?: ""
-                trySend(value)
+            if (changedKey == keyWatchdogEnabled) {
+                trySend(prefs.getBoolean(keyWatchdogEnabled, false))
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
-        val value = prefs.getString(key, "") ?: ""
-        trySend(value)
+        trySend(prefs.getBoolean(keyWatchdogEnabled, false))
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }.distinctUntilChanged()
     
-    override suspend fun setPassword(password: String) {
-        prefs.edit { putString("admin_password", password) }
+    override suspend fun setWatchdogEnabled(enabled: Boolean) {
+        prefs.edit { putBoolean(keyWatchdogEnabled, enabled) }
     }
     
-    override suspend fun verifyPassword(password: String): Boolean {
-        val storedPassword = prefs.getString("admin_password", "") ?: ""
-        return storedPassword.isEmpty() || storedPassword == password
-    }
-    
-    override fun hasPassword(): Flow<Boolean> = callbackFlow {
-        val key = "admin_password"
+    override fun getWatchdogFeedInterval(): Flow<Long> = callbackFlow {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
-            if (changedKey == key) {
-                val value = prefs.getString(key, "") ?: ""
-                trySend(value.isNotEmpty())
+            if (changedKey == keyWatchdogFeedInterval) {
+                trySend(prefs.getLong(keyWatchdogFeedInterval, 30_000L))
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
-        val value = prefs.getString(key, "") ?: ""
-        trySend(value.isNotEmpty())
+        trySend(prefs.getLong(keyWatchdogFeedInterval, 30_000L))
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }.distinctUntilChanged()
+    
+    override suspend fun setWatchdogFeedInterval(interval: Long) {
+        prefs.edit { putLong(keyWatchdogFeedInterval, interval) }
+    }
+    
+    override fun getUsbMode(): Flow<String> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
+            if (changedKey == keyUsbMode) {
+                trySend(prefs.getString(keyUsbMode, "host") ?: "host")
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getString(keyUsbMode, "host") ?: "host")
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }.distinctUntilChanged()
+    
+    override suspend fun setUsbMode(mode: String) {
+        prefs.edit { putString(keyUsbMode, mode) }
+    }
     
     fun isShowSystemSettingsButton(): Flow<Boolean> = callbackFlow {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
