@@ -29,10 +29,7 @@ class DataStoreKioskSettings(private val context: Context) : KioskSettings {
     private val keyVolume = intPreferencesKey("volume")
     // USB 模式设置 - USB Mode settings
     private val keyUsbMode = stringPreferencesKey("usb_mode")
-    // 看门狗设置 - Watchdog settings
     private val keyCheckInterval = longPreferencesKey("check_interval")
-    private val keyWatchdogEnabled = booleanPreferencesKey("watchdog_enabled")
-    private val keyWatchdogFeedInterval = longPreferencesKey("watchdog_feed_interval")
 
     override fun getCheckInterval(): Flow<Long> {
         return context.dataStore.data.map { prefs ->
@@ -48,7 +45,7 @@ class DataStoreKioskSettings(private val context: Context) : KioskSettings {
 
     override fun getStartUrl(): Flow<String> {
         return context.dataStore.data.map { prefs ->
-            prefs[keyStartUrl] ?: "https://youku.com"
+            prefs[keyStartUrl] ?: "https://bing.com"
         }
     }
 
@@ -134,30 +131,6 @@ class DataStoreKioskSettings(private val context: Context) : KioskSettings {
     override suspend fun setUsbMode(mode: String) {
         context.dataStore.edit { prefs ->
             prefs[keyUsbMode] = mode
-        }
-    }
-    
-    override fun getWatchdogEnabled(): Flow<Boolean> {
-        return context.dataStore.data.map { prefs ->
-            prefs[keyWatchdogEnabled] ?: false
-        }
-    }
-    
-    override suspend fun setWatchdogEnabled(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[keyWatchdogEnabled] = enabled
-        }
-    }
-    
-    override fun getWatchdogFeedInterval(): Flow<Long> {
-        return context.dataStore.data.map { prefs ->
-            prefs[keyWatchdogFeedInterval] ?: 30_000L
-        }
-    }
-    
-    override suspend fun setWatchdogFeedInterval(interval: Long) {
-        context.dataStore.edit { prefs ->
-            prefs[keyWatchdogFeedInterval] = interval
         }
     }
 }

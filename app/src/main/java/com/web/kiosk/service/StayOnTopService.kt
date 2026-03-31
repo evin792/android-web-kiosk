@@ -17,9 +17,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import com.web.kiosk.MainActivity
 import com.web.kiosk.data.KioskSettingsFactory
+import com.web.kiosk.util.YfBroadcast
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class StayOnTopService : Service() {
     companion object {
@@ -62,15 +67,19 @@ class StayOnTopService : Service() {
 
         serviceScope.launch {
             kioskSettings.getCheckInterval().collect { interval ->
-                Log.i("StayOnTopService", "Interval updated: $interval")
+                Log.i("StayOnTopService", "Check interval updated: $interval")
                 updateCheckInterval(interval)
             }
         }
 
-        startForegroundService()
-        handler.post(checkTask)
-        isRunning = true
-        Log.i("StayOnTopService", "Service created")
+        // 启动前台服务
+        serviceScope.launch {
+            delay(100)
+            startForegroundService()
+            handler.post(checkTask)
+            isRunning = true
+            Log.i("StayOnTopService", "Service created")
+        }
     }
 
     override fun onDestroy() {

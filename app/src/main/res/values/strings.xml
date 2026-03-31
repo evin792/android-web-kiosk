@@ -61,25 +61,15 @@
     <string name="button_reboot">Reboot Device</string>
     <string name="button_open_system_settings">System Settings</string>
     <string name="button_wifi_settings">Wi-Fi Settings</string>
-    <string name="button_adjust_volume">Volume</string>
-    <string name="button_screen_brightness">Brightness</string>
+    <string name="button_adjust_volume">Adjust Volume</string>
+    <string name="dialog_volume_title">Adjust System Volume</string>
     <string name="button_system_display">Display</string>
-    <string name="dialog_volume_title">Adjust Volume</string>
 
-    <!-- Watchdog Settings -->
-    <string name="watchdog_title">Watchdog Settings</string>
-    <string name="watchdog_description">System will refresh regularly to prevent sleep</string>
+    <!-- USB Mode -->
     <string name="usb_mode_title">USB Mode</string>
-    <string name="usb_mode_current">Current Mode: %1$s</string>
     <string name="usb_mode_host">Host</string>
     <string name="usb_mode_otg">OTG</string>
-    <string name="usb_mode_switch_hint">Switch between Host and OTG mode</string>
-    <string name="watchdog_enable">Enable Watchdog</string>
-    <string name="watchdog_feed_interval">Feed Interval (seconds)</string>
-    <string name="seconds_unit">e.g., 60</string>
-    <string name="watchdog_interval_range">Min: 1, Max: 9999</string>
-    <string name="watchdog_last_feed">Last Feed</string>
-    <string name="watchdog_next_feed">Next Feed</string>
+    <string name="usb_mode_switch_hint">Enable = Host Mode, Disable = OTG Mode</string>
 
     <string name="button_confirm">Confirm</string>
     <string name="warning_title">⚠️ Warning</string>

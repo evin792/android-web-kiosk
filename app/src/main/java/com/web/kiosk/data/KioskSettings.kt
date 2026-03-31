@@ -22,12 +22,6 @@ interface KioskSettings {
     fun getVolume(): Flow<Int>
     suspend fun setVolume(volume: Int)
     
-    // 看门狗设置
-    fun getWatchdogEnabled(): Flow<Boolean>
-    suspend fun setWatchdogEnabled(enabled: Boolean)
-    fun getWatchdogFeedInterval(): Flow<Long>
-    suspend fun setWatchdogFeedInterval(interval: Long)
-    
     // USB 模式设置
     fun getUsbMode(): Flow<String>
     suspend fun setUsbMode(mode: String)

@@ -24,10 +24,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.web.kiosk.R
 import com.web.kiosk.data.KioskConfig
+import com.web.kiosk.data.KioskSettings
 import com.web.kiosk.data.KioskSettingsFactory
 import com.web.kiosk.data.Rotation
 import com.web.kiosk.data.UserAgentType
@@ -54,15 +56,14 @@ fun SettingsScreen() {
     var idleBrightness by remember { mutableStateOf("") }
     var activeBrightness by remember { mutableStateOf("") }
     var userAgentType by remember { mutableStateOf(UserAgentType.DESKTOP) }
-    var watchdogEnabled by remember { mutableStateOf(false) }
-    var watchdogFeedInterval by remember { mutableStateOf("30") }
     var usbMode by remember { mutableStateOf("host") }
+
 
     var checkIntervalError by remember { mutableStateOf<String?>(null) }
     var idleTimeoutError by remember { mutableStateOf<String?>(null) }
     var idleBrightnessError by remember { mutableStateOf<String?>(null) }
     var activeBrightnessError by remember { mutableStateOf<String?>(null) }
-    var watchdogFeedIntervalError by remember { mutableStateOf<String?>(null) }
+    var isSwitchingUsbMode by remember { mutableStateOf(false) }
 
     val tabs = listOf(
         stringResource(R.string.tab_general),
@@ -91,8 +92,6 @@ fun SettingsScreen() {
         idleBrightness = kioskSettings.getIdleBrightness().first().toString()
         activeBrightness = kioskSettings.getActiveBrightness().first().toString()
         userAgentType = kioskSettings.getUserAgentType().first()
-        watchdogEnabled = kioskSettings.getWatchdogEnabled().first()
-        watchdogFeedInterval = (kioskSettings.getWatchdogFeedInterval().first() / 1000).toString()
         usbMode = kioskSettings.getUsbMode().first()
     }
 
@@ -157,7 +156,12 @@ fun SettingsScreen() {
                     idleTimeout = idleTimeout,
                     onIdleTimeoutChange = { idleTimeout = it },
                     idleTimeoutError = idleTimeoutError,
-                    onIdleTimeoutErrorChange = { idleTimeoutError = it }
+                    onIdleTimeoutErrorChange = { idleTimeoutError = it },
+                    context = context,
+                    activity = activity,
+                    kioskSettings = kioskSettings,
+                    isSwitchingUsbMode = isSwitchingUsbMode,
+                    onIsSwitchingUsbModeChange = { isSwitchingUsbMode = it }
                 )
                 2 -> BrightnessSettingsTab(
                     idleBrightness = idleBrightness,
@@ -176,19 +180,6 @@ fun SettingsScreen() {
                         Intent(Settings.ACTION_SETTINGS).apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK
                             context.startActivity(this)
-                        }
-                    },
-                    watchdogEnabled = watchdogEnabled,
-                    onWatchdogEnabledChange = { watchdogEnabled = it },
-                    watchdogFeedInterval = watchdogFeedInterval,
-                    onWatchdogFeedIntervalChange = { watchdogFeedInterval = it },
-                    watchdogFeedIntervalError = watchdogFeedIntervalError,
-                    onWatchdogFeedIntervalErrorChange = { watchdogFeedIntervalError = it },
-                    usbMode = usbMode,
-                    onUsbModeChange = { newMode ->
-                        usbMode = newMode
-                        activity?.lifecycleScope?.launch {
-                            kioskSettings.setUsbMode(newMode)
                         }
                     }
                 )
@@ -244,9 +235,6 @@ fun SettingsScreen() {
                         val activeBrightnessValue = activeBrightness.toIntOrNull()
                         if (activeBrightnessValue == null || activeBrightnessValue !in 0..100) { activeBrightnessError = "0–100"; hasError = true }
 
-                        val watchdogFeedIntervalValue = watchdogFeedInterval.toLongOrNull()
-                        if (watchdogEnabled && (watchdogFeedIntervalValue == null || watchdogFeedIntervalValue !in 1..99999)) { watchdogFeedIntervalError = "1-99999"; hasError = true }
-
                         if (hasError) return@Button
 
                         hideKeyboard()
@@ -259,8 +247,6 @@ fun SettingsScreen() {
                             kioskSettings.setIdleBrightness(idleBrightnessValue!!)
                             kioskSettings.setActiveBrightness(activeBrightnessValue!!)
                             kioskSettings.setUserAgentType(userAgentType)
-                            kioskSettings.setWatchdogEnabled(watchdogEnabled)
-                            kioskSettings.setWatchdogFeedInterval(watchdogFeedIntervalValue!! * 1000L)
                             kioskSettings.setUsbMode(usbMode)
 
                             StayOnTopService.restart(context)
@@ -548,36 +534,50 @@ fun SystemSettingsTabContent(
     context: Context,
     onReboot: () -> Unit,
     onOpenSettings: () -> Unit,
-    watchdogEnabled: Boolean = false,
-    onWatchdogEnabledChange: ((Boolean) -> Unit)? = null,
-    watchdogFeedInterval: String = "30",
-    onWatchdogFeedIntervalChange: ((String) -> Unit)? = null,
-    watchdogFeedIntervalError: String? = null,
-    onWatchdogFeedIntervalErrorChange: ((String?) -> Unit)? = null,
     usbMode: String = "host",
     onUsbModeChange: ((String) -> Unit)? = null
 ) {
     var showRebootConfirm by remember { mutableStateOf(false) }
     var isSwitchingUsbMode by remember { mutableStateOf(false) }
+    val actualUsbMode = remember(context) {
+        mutableStateOf(readSystemActualUsbMode(context) ?: "host")
+    }
+    val coroutineScope = rememberCoroutineScope()
+
+    // 每次焦点变化都重新读取实际状态
+    LaunchedEffect(Unit) {
+        val mode = readSystemActualUsbMode(context)
+        android.util.Log.d("SystemSettings", "Initial USB mode from sysfs: $mode")
+        actualUsbMode.value = mode ?: "host"
+    }
 
     fun switchUsbMode(mode: String) {
         if (isSwitchingUsbMode) return
-        
-        isSwitchingUsbMode = true
-        try {
-            val success = YfBroadcast.yfSetUsbMode(context, mode)
 
-            if (success) {
-                // 保存到设置
-                onUsbModeChange?.invoke(mode)
-                Log.d("SystemSettings", "USB mode switched to: $mode successfully")
-            } else {
-                Log.e("SystemSettings", "Failed to switch USB mode")
+        isSwitchingUsbMode = true
+        
+        coroutineScope.launch {
+            try {
+                val success = YfBroadcast.yfSetUsbMode(context, mode)
+
+                if (success) {
+                    // 保存到设置
+                    onUsbModeChange?.invoke(mode)
+                    // 延迟等待系统状态更新
+                    delay(500)
+                    // 重新读取系统实际状态，以 sysfs 为准
+                    val newMode = readSystemActualUsbMode(context)
+                    android.util.Log.d("SystemSettings", "USB mode after switch - Requested: $mode, Actual from sysfs: $newMode")
+                    actualUsbMode.value = newMode ?: mode
+                    Log.d("SystemSettings", "USB mode switched successfully")
+                } else {
+                    Log.e("SystemSettings", "Failed to switch USB mode")
+                }
+            } catch (e: Exception) {
+                Log.e("SystemSettings", "Error switching USB mode", e)
+            } finally {
+                isSwitchingUsbMode = false
             }
-        } catch (e: Exception) {
-            Log.e("SystemSettings", "Error switching USB mode", e)
-        } finally {
-            isSwitchingUsbMode = false
         }
     }
 
@@ -595,7 +595,10 @@ fun SystemSettingsTabContent(
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text(stringResource(R.string.button_reboot_confirm), fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(R.string.button_reboot_confirm),
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             },
             dismissButton = {
@@ -616,118 +619,6 @@ fun SystemSettingsTabContent(
             .verticalScroll(rememberScrollState())
     ) {
         Spacer(Modifier.height(24.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        text = stringResource(R.string.watchdog_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.watchdog_enable),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = stringResource(R.string.watchdog_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Switch(
-                        checked = watchdogEnabled,
-                        onCheckedChange = { onWatchdogEnabledChange?.invoke(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.primary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
-                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    )
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = watchdogFeedInterval,
-                    onValueChange = { newValue ->
-                        if (newValue.isBlank() || newValue.matches(Regex("\\d*"))) {
-                            onWatchdogFeedIntervalChange?.invoke(newValue)
-                            onWatchdogFeedIntervalErrorChange?.invoke(null)
-                        }
-                    },
-                    label = { Text(stringResource(R.string.watchdog_feed_interval)) },
-                    placeholder = { Text(stringResource(R.string.seconds_unit)) },
-                    supportingText = {
-                        Text(
-                            watchdogFeedIntervalError ?: stringResource(R.string.watchdog_interval_range),
-                            color = if (watchdogFeedIntervalError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = watchdogFeedIntervalError != null,
-                    shape = MaterialTheme.shapes.small,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = if (watchdogFeedIntervalError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        focusedLabelColor = if (watchdogFeedIntervalError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    enabled = watchdogEnabled
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Start
-                ) {
-                    Text(
-                        text = "${stringResource(R.string.watchdog_last_feed)}: --:--:--",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.width(16.dp))
-                    Text(
-                        text = "${stringResource(R.string.watchdog_next_feed)}: --:--:--",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
 
         Spacer(Modifier.height(10.dp))
 
@@ -805,7 +696,8 @@ fun SystemSettingsTabContent(
 
                 Button(
                     onClick = {
-                        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                        val audioManager =
+                            context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
                         audioManager.adjustStreamVolume(
                             AudioManager.STREAM_MUSIC,
                             AudioManager.ADJUST_SAME,
@@ -855,11 +747,6 @@ fun SystemSettingsTabContent(
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Text(
-                        text = stringResource(R.string.usb_mode_switch_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
 
                 Row(
@@ -867,36 +754,36 @@ fun SystemSettingsTabContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
-                        onClick = { switchUsbMode("host") },
-                        enabled = !isSwitchingUsbMode,
-                        modifier = Modifier.height(36.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (usbMode == "host") MaterialTheme.colorScheme.primary else Color.White,
-                            contentColor = if (usbMode == "host") Color.White else MaterialTheme.colorScheme.onSurface
-                        ),
-                        shape = MaterialTheme.shapes.small,
-                        contentPadding = PaddingValues(horizontal = 16.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.usb_mode_host),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
-                    Button(
                         onClick = { switchUsbMode("otg") },
                         enabled = !isSwitchingUsbMode,
                         modifier = Modifier.height(36.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (usbMode == "otg") MaterialTheme.colorScheme.primary else Color.White,
-                            contentColor = if (usbMode == "otg") Color.White else MaterialTheme.colorScheme.onSurface
+                            containerColor = if (actualUsbMode.value == "otg") MaterialTheme.colorScheme.primary else Color.White,
+                            contentColor = if (actualUsbMode.value == "otg") Color.White else MaterialTheme.colorScheme.onSurface
                         ),
                         shape = MaterialTheme.shapes.small,
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
                         Text(
                             text = stringResource(R.string.usb_mode_otg),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    Button(
+                        onClick = { switchUsbMode("host") },
+                        enabled = !isSwitchingUsbMode,
+                        modifier = Modifier.height(36.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (actualUsbMode.value == "host") MaterialTheme.colorScheme.primary else Color.White,
+                            contentColor = if (actualUsbMode.value == "host") Color.White else MaterialTheme.colorScheme.onSurface
+                        ),
+                        shape = MaterialTheme.shapes.small,
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.usb_mode_host),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -1056,6 +943,34 @@ fun SystemSettingsTabContent(
     }
 }
 
+/**
+ * 读取系统实际的 USB 模式状态
+ * 直接读取 /sys/devices/platform/fe8a0000.usb2-phy/otg_mode 文件
+ * @return "host" 或 "otg"，读取失败返回 null
+ */
+private fun readSystemActualUsbMode(context: Context): String? {
+    return try {
+        val file = java.io.File("/sys/devices/platform/fe8a0000.usb2-phy/otg_mode")
+        if (!file.exists()) {
+            android.util.Log.e("SystemSettings", "USB mode file does not exist: ${file.absolutePath}")
+            return null
+        }
+        
+        val content = file.readText().trim().lowercase()
+        android.util.Log.d("SystemSettings", "USB mode: $content")
+        
+        // RK3566 平台：文件内容只有 "otg" 或 "host" 两种
+        return when (content) {
+            "otg" -> "otg"
+            "host" -> "host"
+            else -> null
+        }
+    } catch (e: Exception) {
+        android.util.Log.e("SystemSettings", "Failed to read USB mode", e)
+        null
+    }
+}
+
 @Composable
 fun GeneralSettingsTab(
     kioskUrl: String,
@@ -1201,7 +1116,12 @@ fun DisplaySettingsTab(
     idleTimeout: String,
     onIdleTimeoutChange: (String) -> Unit,
     idleTimeoutError: String?,
-    onIdleTimeoutErrorChange: (String?) -> Unit
+    onIdleTimeoutErrorChange: (String?) -> Unit,
+    context: Context,
+    activity: ComponentActivity?,
+    kioskSettings: KioskSettings,
+    isSwitchingUsbMode: Boolean,
+    onIsSwitchingUsbModeChange: (Boolean) -> Unit
 ) {
     Column(
         modifier = Modifier

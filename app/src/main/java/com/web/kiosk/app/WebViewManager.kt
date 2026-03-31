@@ -28,44 +28,60 @@ class WebViewManager(
     }
     
     private fun printWebViewVersion() {
-        try {
-            val webViewPackage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.packageManager.getPackageInfo("com.android.webview", PackageManager.PackageInfoFlags.of(0))
-            } else {
-                @Suppress("DEPRECATION")
-                context.packageManager.getPackageInfo("com.android.webview", 0)
-            }
-            Log.d("WebViewManager", "=== WebView Version ===")
-            Log.d("WebViewManager", "WebView Package: com.android.webview")
-            Log.d("WebViewManager", "Version Name: ${webViewPackage.versionName}")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                Log.d("WebViewManager", "Version Code: ${webViewPackage.longVersionCode}")
-            } else {
-                @Suppress("DEPRECATION")
-                Log.d("WebViewManager", "Version Code: ${webViewPackage.versionCode}")
-            }
-            Log.d("WebViewManager", "Android SDK: ${Build.VERSION.SDK_INT}")
-            Log.d("WebViewManager", "========================")
-        } catch (e: Exception) {
-            Log.e("WebViewManager", "Failed to get WebView version: ${e.message}")
-            // Try to get system webview info as fallback
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                try {
-                    val webViewInfo = WebView.getCurrentWebViewPackage()
-                    webViewInfo?.let {
-                        Log.d("WebViewManager", "=== System WebView Info ===")
-                        Log.d("WebViewManager", "Package Name: ${it.packageName}")
-                        Log.d("WebViewManager", "Version Name: ${it.versionName}")
-                        Log.d("WebViewManager", "==========================")
-                    } ?: run {
-                        Log.w("WebViewManager", "System WebView package info is null")
-                    }
-                } catch (e2: Exception) {
-                    Log.e("WebViewManager", "Also failed to get system webview info: ${e2.message}")
+        val possibleWebViewPackages = listOf(
+            "com.google.android.webview",      // 优先检测 Google WebView
+            "com.android.webview"              // 其次检测系统 WebView
+        )
+        
+        for (packageName in possibleWebViewPackages) {
+            try {
+                val webViewPackage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    context.packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.packageManager.getPackageInfo(packageName, 0)
                 }
-            } else {
-                Log.d("WebViewManager", "System WebView API not available (SDK < 26)")
+                Log.d("WebViewManager", "=== WebView Version ===")
+                Log.d("WebViewManager", "Package: $packageName")
+                Log.d("WebViewManager", "Version Name: ${webViewPackage.versionName}")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    Log.d("WebViewManager", "Version Code: ${webViewPackage.longVersionCode}")
+                } else {
+                    @Suppress("DEPRECATION")
+                    Log.d("WebViewManager", "Version Code: ${webViewPackage.versionCode}")
+                }
+                Log.d("WebViewManager", "Android SDK: ${Build.VERSION.SDK_INT}")
+                Log.d("WebViewManager", "========================")
+                return
+            } catch (e: PackageManager.NameNotFoundException) {
+                Log.w("WebViewManager", "Package '$packageName' not found, trying next...")
+                continue
+            } catch (e: Exception) {
+                Log.e("WebViewManager", "Error getting package '$packageName': ${e.message}")
+                continue
             }
+        }
+        
+        Log.w("WebViewManager", "Cannot get WebView package by name, trying fallback...")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val webViewInfo = WebView.getCurrentWebViewPackage()
+                webViewInfo?.let {
+                    Log.d("WebViewManager", "=== WebView Info (Fallback) ===")
+                    Log.d("WebViewManager", "Package Name: ${it.packageName}")
+                    Log.d("WebViewManager", "Version Name: ${it.versionName}")
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        Log.d("WebViewManager", "Version Code: ${it.longVersionCode}")
+                    }
+                    Log.d("WebViewManager", "==========================")
+                } ?: run {
+                    Log.e("WebViewManager", "Failed to get WebView info: package is null")
+                }
+            } catch (e2: Exception) {
+                Log.e("WebViewManager", "Failed to get any WebView info: ${e2.message}")
+            }
+        } else {
+            Log.e("WebViewManager", "Cannot get WebView info: SDK < 26 and no fallback available")
         }
     }
     

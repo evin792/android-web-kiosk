@@ -16,8 +16,6 @@ class SharedPreferencesKioskSettings(context: Context) : KioskSettings {
     private val keyActiveBrightness = "active_brightness"
     private val keyVolume = "volume"
     private val keyShowSystemSettingsButton = "show_system_settings_button"
-    private val keyWatchdogEnabled = "watchdog_enabled"
-    private val keyWatchdogFeedInterval = "watchdog_feed_interval"
     private val keyUsbMode = "usb_mode"
 
     override fun getCheckInterval(): Flow<Long> = callbackFlow {
@@ -153,49 +151,75 @@ class SharedPreferencesKioskSettings(context: Context) : KioskSettings {
         prefs.edit { putInt(keyVolume, volume.coerceIn(0, 100)) }
     }
     
-    override fun getWatchdogEnabled(): Flow<Boolean> = callbackFlow {
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
-            if (changedKey == keyWatchdogEnabled) {
-                trySend(prefs.getBoolean(keyWatchdogEnabled, false))
-            }
-        }
-        prefs.registerOnSharedPreferenceChangeListener(listener)
-        trySend(prefs.getBoolean(keyWatchdogEnabled, false))
-        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
-    }.distinctUntilChanged()
-    
-    override suspend fun setWatchdogEnabled(enabled: Boolean) {
-        prefs.edit { putBoolean(keyWatchdogEnabled, enabled) }
-    }
-    
-    override fun getWatchdogFeedInterval(): Flow<Long> = callbackFlow {
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
-            if (changedKey == keyWatchdogFeedInterval) {
-                trySend(prefs.getLong(keyWatchdogFeedInterval, 30_000L))
-            }
-        }
-        prefs.registerOnSharedPreferenceChangeListener(listener)
-        trySend(prefs.getLong(keyWatchdogFeedInterval, 30_000L))
-        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
-    }.distinctUntilChanged()
-    
-    override suspend fun setWatchdogFeedInterval(interval: Long) {
-        prefs.edit { putLong(keyWatchdogFeedInterval, interval) }
-    }
-    
     override fun getUsbMode(): Flow<String> = callbackFlow {
+        // 每次都优先读取系统实际状态
+        val systemMode = readSystemUsbMode()
+        val savedMode = prefs.getString(keyUsbMode, "host") ?: "host"
+        
+        // 如果系统状态可读，使用系统状态；否则使用保存的状态
+        var lastKnownMode = systemMode ?: savedMode
+        
+        android.util.Log.d("KioskSettings", "Initial USB mode - System: $systemMode, Saved: $savedMode, Using: $lastKnownMode")
+        
+        // 首次发送系统实际状态
+        trySend(lastKnownMode)
+        
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
             if (changedKey == keyUsbMode) {
-                trySend(prefs.getString(keyUsbMode, "host") ?: "host")
+                // 当设置改变时，重新读取系统实际状态进行同步
+                val currentSystemMode = readSystemUsbMode()
+                val currentSavedMode = prefs.getString(keyUsbMode, "host") ?: "host"
+                val currentMode = currentSystemMode ?: currentSavedMode
+                
+                android.util.Log.d("KioskSettings", "USB mode changed - System: $currentSystemMode, Saved: $currentSavedMode, Using: $currentMode")
+                
+                if (currentMode != lastKnownMode) {
+                    trySend(currentMode)
+                    lastKnownMode = currentMode
+                }
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
-        trySend(prefs.getString(keyUsbMode, "host") ?: "host")
+        
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }.distinctUntilChanged()
     
     override suspend fun setUsbMode(mode: String) {
         prefs.edit { putString(keyUsbMode, mode) }
+    }
+
+    /**
+     * 读取系统实际的 USB 模式状态
+     * @return "host" 或 "otg"，读取失败返回 null
+     */
+    private fun readSystemUsbMode(): String? {
+        return try {
+            val file = java.io.File("/sys/devices/platform/fe8a0000.usb2-phy/otg_mode")
+            if (!file.exists()) {
+                android.util.Log.e("KioskSettings", "USB mode file does not exist")
+                return null
+            }
+            
+            val content = file.readText().trim()
+            android.util.Log.d("KioskSettings", "USB mode file content: '$content'")
+            
+            // 直接比较字符串，不依赖 contains
+            return when {
+                content.equals("host", ignoreCase = true) || 
+                content.equals("1", ignoreCase = true) -> "host"
+                content.equals("otg", ignoreCase = true) || 
+                content.equals("0", ignoreCase = true) -> "otg"
+                content.contains("host", ignoreCase = true) -> "host"
+                content.contains("otg", ignoreCase = true) -> "otg"
+                else -> {
+                    android.util.Log.w("KioskSettings", "Unknown USB mode: '$content'")
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("KioskSettings", "Failed to read USB mode", e)
+            null
+        }
     }
     
     fun isShowSystemSettingsButton(): Flow<Boolean> = callbackFlow {
