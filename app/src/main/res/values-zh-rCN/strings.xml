@@ -58,6 +58,9 @@
     <string name="resolution_label">分辨率</string>
     <string name="ram_label">运行内存</string>
     <string name="storage_label">存储空间</string>
+    <string name="ethernet_ip_label">以太网 IP</string>
+    <string name="ethernet_mac_label">以太网 MAC</string>
+    <string name="network_type_label">网络类型</string>
     <string name="button_wifi_settings">WiFi 设置</string>
     <string name="button_adjust_volume">调节音量</string>
     <string name="button_system_display">系统显示</string>
