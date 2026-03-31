@@ -125,6 +125,22 @@ object YfBroadcast {
             context.sendBroadcast(this)
         }
     }
+    
+    /**
+     * 设置当前应用为开机自启动
+     * @param context 上下文
+     */
+    fun yfSetAutoBootCurrentApp(context: Context) {
+        yfSetAutoBootApp(context, context.packageName)
+    }
+    
+    /**
+     * 取消开机自启动
+     * @param context 上下文
+     */
+    fun yfCancelAutoBootApp(context: Context) {
+        yfSetAutoBootApp(context, null)
+    }
 
     // ================= 16. HDMI 控制 (文档 #16) =================
     fun yfHdmiControl(context: Context, enabled: Boolean) {

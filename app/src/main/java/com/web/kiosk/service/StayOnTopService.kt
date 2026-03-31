@@ -35,6 +35,9 @@ class StayOnTopService : Service() {
         @Volatile
         var isActivityVisible = false
 
+        @Volatile
+        var isCheckPaused = false
+
         fun restart(context: Context) {
             if (isRunning) {
                 context.stopService(Intent(context, StayOnTopService::class.java))
@@ -51,10 +54,14 @@ class StayOnTopService : Service() {
 
     private val checkTask = object : Runnable {
         override fun run() {
-            if (!isActivityVisible) {
+            if (!isCheckPaused && !isActivityVisible) {
                 bringAppToFront()
             } else {
-                Log.i("StayOnTopService", "Activity is already visible, skipping bring to front")
+                if (isCheckPaused) {
+                    Log.i("StayOnTopService", "Check is paused, skipping bring to front")
+                } else {
+                    Log.i("StayOnTopService", "Activity is already visible, skipping bring to front")
+                }
             }
             handler.postDelayed(this, checkInterval)
         }

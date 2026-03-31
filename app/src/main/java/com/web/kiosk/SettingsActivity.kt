@@ -2,6 +2,7 @@ package com.web.kiosk
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
@@ -10,12 +11,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.WindowCompat
 import com.web.kiosk.components.SettingsScreen
+import com.web.kiosk.service.StayOnTopService
 import com.web.kiosk.ui.theme.DarkBackgroundColor
 import com.web.kiosk.ui.theme.TvSettingsTheme
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        StayOnTopService.isCheckPaused = true
+        Log.d("SettingsActivity", "Paused StayOnTopService check")
 
         window.setBackgroundDrawable(DarkBackgroundColor.toArgb().toDrawable())
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -29,6 +34,12 @@ class SettingsActivity : ComponentActivity() {
                 SettingsScreen()
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        StayOnTopService.isCheckPaused = false
+        Log.d("SettingsActivity", "Resumed StayOnTopService check")
     }
 }
 

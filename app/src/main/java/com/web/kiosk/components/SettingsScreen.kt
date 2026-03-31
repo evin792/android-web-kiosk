@@ -27,12 +27,14 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 import com.web.kiosk.R
 import com.web.kiosk.data.KioskConfig
 import com.web.kiosk.data.KioskSettings
 import com.web.kiosk.data.KioskSettingsFactory
 import com.web.kiosk.data.Rotation
 import com.web.kiosk.data.UserAgentType
+import com.web.kiosk.data.clearDataStoreData
 import com.web.kiosk.service.StayOnTopService
 import com.web.kiosk.util.YfBroadcast
 import androidx.compose.material.icons.filled.Info
@@ -173,6 +175,7 @@ fun SettingsScreen() {
                     onIdleBrightnessErrorChange = { idleBrightnessError = it },
                     onActiveBrightnessErrorChange = { activeBrightnessError = it }
                 )
+                // ... existing code ...
                 3 -> SystemSettingsTabContent(
                     context = context,
                     onReboot = { YfBroadcast.yfReboot(context) },
@@ -181,9 +184,87 @@ fun SettingsScreen() {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK
                             context.startActivity(this)
                         }
+                    },
+                    onFactoryReset = {
+                        Log.d("AppReset", "Starting clear app data...")
+
+                        kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
+                            // 1. 清除所有 SharedPreferences 数据
+                            val prefsNames = listOf("kiosk_settings", "com.web.kiosk_preferences")
+                            prefsNames.forEach { name ->
+                                try {
+                                    val prefs = context.getSharedPreferences(name, Context.MODE_PRIVATE)
+                                    prefs.edit().clear().apply()
+                                    Log.d("AppReset", "Cleared SharedPreferences: $name")
+                                } catch (e: Exception) {
+                                    Log.e("AppReset", "Failed to clear $name", e)
+                                }
+                            }
+
+                            // 2. 清除 DataStore 数据
+                            try {
+                                context.clearDataStoreData()
+                                Log.d("AppReset", "Cleared DataStore")
+                            } catch (e: Exception) {
+                                Log.e("AppReset", "Failed to clear DataStore", e)
+                            }
+
+                            // 3. 清除缓存目录
+                            try {
+                                context.cacheDir.deleteRecursively()
+                                context.codeCacheDir.deleteRecursively()
+                                Log.d("AppReset", "Cleared cache directories")
+                            } catch (e: Exception) {
+                                Log.e("AppReset", "Failed to clear cache", e)
+                            }
+
+                            // 4. 清除数据库
+                            try {
+                                context.databaseList().forEach { dbName ->
+                                    context.deleteDatabase(dbName)
+                                    Log.d("AppReset", "Deleted database: $dbName")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("AppReset", "Failed to delete databases", e)
+                            }
+
+                            // 5. 清除 WebView 数据
+                            try {
+                                android.webkit.CookieManager.getInstance().removeAllCookies(null)
+                                android.webkit.CookieManager.getInstance().flush()
+                                Log.d("AppReset", "Cleared WebView data")
+                            } catch (e: Exception) {
+                                Log.e("AppReset", "Failed to clear WebView data", e)
+                            }
+
+                            // 6. 清除 shared_prefs 目录
+                            try {
+                                val sharedPrefsDir = java.io.File(context.applicationInfo.dataDir, "shared_prefs")
+                                if (sharedPrefsDir.exists()) {
+                                    sharedPrefsDir.deleteRecursively()
+                                    Log.d("AppReset", "Deleted shared_prefs directory")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("AppReset", "Failed to delete shared_prefs", e)
+                            }
+
+                            // 7. 重启应用
+                            kotlinx.coroutines.GlobalScope.launch(Dispatchers.Main) {
+                                delay(500)
+                                Log.d("AppReset", "Restarting app...")
+
+                                val packageManager = context.packageManager
+                                val intent = packageManager.getLaunchIntentForPackage(context.packageName)
+                                val componentName = intent!!.component
+                                val mainIntent = Intent.makeRestartActivityTask(componentName)
+                                context.startActivity(mainIntent)
+                                Runtime.getRuntime().exit(0)
+                            }
+                        }
                     }
                 )
-                4 -> InfoSettingsTab(
+
+                    4 -> InfoSettingsTab(
                     context = context
                 )
             }
@@ -534,10 +615,12 @@ fun SystemSettingsTabContent(
     context: Context,
     onReboot: () -> Unit,
     onOpenSettings: () -> Unit,
+    onFactoryReset: () -> Unit,
     usbMode: String = "host",
     onUsbModeChange: ((String) -> Unit)? = null
 ) {
     var showRebootConfirm by remember { mutableStateOf(false) }
+    var showFactoryResetConfirm by remember { mutableStateOf(false) }
     var isSwitchingUsbMode by remember { mutableStateOf(false) }
     val actualUsbMode = remember(context) {
         mutableStateOf(readSystemActualUsbMode(context) ?: "host")
@@ -604,6 +687,37 @@ fun SystemSettingsTabContent(
             dismissButton = {
                 TextButton(onClick = { showRebootConfirm = false }) {
                     Text(stringResource(R.string.button_cancel_reboot))
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    if (showFactoryResetConfirm) {
+        AlertDialog(
+            onDismissRequest = { showFactoryResetConfirm = false },
+            title = { Text(stringResource(R.string.confirm_factory_reset_title)) },
+            text = { Text(stringResource(R.string.confirm_factory_reset_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        Log.d("FactoryReset", "User confirmed factory reset")
+                        showFactoryResetConfirm = false
+                        onFactoryReset()
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(
+                        stringResource(R.string.button_reset_confirm),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showFactoryResetConfirm = false }) {
+                    Text(stringResource(R.string.button_cancel_reset))
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface,
@@ -909,6 +1023,28 @@ fun SystemSettingsTabContent(
         ) {
             Text(
                 stringResource(R.string.button_reboot),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        OutlinedButton(
+            onClick = { showFactoryResetConfirm = true },
+            modifier = Modifier
+                .widthIn(max = 300.dp)
+                .height(40.dp)
+                .align(Alignment.CenterHorizontally),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+            shape = MaterialTheme.shapes.medium,
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+        ) {
+            Text(
+                stringResource(R.string.button_factory_reset),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium
             )

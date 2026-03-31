@@ -6,12 +6,17 @@ import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
 import com.web.kiosk.service.StayOnTopService
+import com.web.kiosk.util.YfBroadcast
 
 class KioskApplication : Application() {
     private var resumedActivities = 0
 
     override fun onCreate() {
         super.onCreate()
+        
+        // 设置当前应用为开机自启动
+        YfBroadcast.yfSetAutoBootCurrentApp(this)
+        Log.d("KioskApplication", "Auto-boot enabled for current app")
 
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {

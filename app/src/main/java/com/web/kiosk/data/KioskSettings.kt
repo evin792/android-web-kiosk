@@ -1,6 +1,11 @@
 package com.web.kiosk.data
 
+import android.content.Context
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 interface KioskSettings {
     fun getCheckInterval(): Flow<Long>
@@ -38,4 +43,26 @@ object KioskConfig {
      * true = 显示，false = 不显示
      */
     const val SHOW_SYSTEM_SETTINGS_BUTTON = false
+}
+
+private val Context.dataStore by preferencesDataStore(name = "kiosk_settings")
+
+suspend fun Context.clearDataStoreData() {
+    try {
+        dataStore.edit { preferences ->
+            @Suppress("UNCHECKED_CAST")
+            val keys = preferences.asMap().keys.toList()
+            keys.forEach { key ->
+                try {
+                    when (key) {
+                        is Preferences.Key<*> -> preferences.remove(key as Preferences.Key<Any>)
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("DataStoreClear", "Failed to remove key: ${key.name}", e)
+                }
+            }
+        }
+    } catch (e: Exception) {
+        android.util.Log.e("DataStoreClear", "Failed to clear DataStore", e)
+    }
 }

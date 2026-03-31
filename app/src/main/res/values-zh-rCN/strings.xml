@@ -58,21 +58,20 @@
     <string name="resolution_label">分辨率</string>
     <string name="ram_label">运行内存</string>
     <string name="storage_label">存储空间</string>
-    <string name="button_reboot">重启设备</string>
-    <string name="button_open_system_settings">系统设置</string>
     <string name="button_wifi_settings">WiFi 设置</string>
     <string name="button_adjust_volume">调节音量</string>
-    <string name="dialog_volume_title">调节系统音量</string>
-    <string name="button_system_display">显示设置</string>
-
-    <!-- USB 模式 -->
+    <string name="button_system_display">系统显示</string>
+    <string name="button_open_system_settings">系统设置</string>
     <string name="usb_mode_title">USB 模式</string>
-    <string name="usb_mode_host">主机模式</string>
     <string name="usb_mode_otg">OTG 模式</string>
-    <string name="usb_mode_switch_hint">开启 = 主机模式，关闭 = OTG 模式</string>
-
-    <string name="button_confirm">确认</string>
-    <string name="warning_title">⚠️ 警告</string>
+    <string name="usb_mode_host">Host 模式</string>
+    <string name="button_reboot">重启设备</string>
+    <string name="button_factory_reset">清除应用数据</string>
+    <string name="confirm_factory_reset_title">确认清除应用数据</string>
+    <string name="confirm_factory_reset_message">此操作将清除所有应用设置、缓存、WebView 数据、数据库，并重启应用。继续？</string>
+    <string name="button_reset_confirm">清除数据</string>
+    <string name="button_cancel_reset">取消</string>
+    <string name="warning_title">警告</string>
     <string name="warning_message">• 重启将立即重新启动设备\n• 按返回键返回信息亭</string>
     <string name="confirm_reboot_title">确认重启</string>
     <string name="confirm_reboot_message">设备将立即重启。继续？</string>

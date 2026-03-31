@@ -60,19 +60,18 @@
     <string name="storage_label">Storage</string>
     <string name="button_reboot">Reboot Device</string>
     <string name="button_open_system_settings">System Settings</string>
-    <string name="button_wifi_settings">Wi-Fi Settings</string>
+    <string name="button_wifi_settings">WiFi Settings</string>
     <string name="button_adjust_volume">Adjust Volume</string>
-    <string name="dialog_volume_title">Adjust System Volume</string>
-    <string name="button_system_display">Display</string>
-
-    <!-- USB Mode -->
+    <string name="button_system_display">System Display</string>
     <string name="usb_mode_title">USB Mode</string>
-    <string name="usb_mode_host">Host</string>
     <string name="usb_mode_otg">OTG</string>
-    <string name="usb_mode_switch_hint">Enable = Host Mode, Disable = OTG Mode</string>
-
-    <string name="button_confirm">Confirm</string>
-    <string name="warning_title">⚠️ Warning</string>
+    <string name="usb_mode_host">Host</string>
+    <string name="button_factory_reset">Clear App Data</string>
+    <string name="confirm_factory_reset_title">Confirm Clear App Data</string>
+    <string name="confirm_factory_reset_message">This will clear all app settings, cache, WebView data, databases, and restart the app. Continue?</string>
+    <string name="button_reset_confirm">Clear Data</string>
+    <string name="button_cancel_reset">Cancel</string>
+    <string name="warning_title">Warning</string>
     <string name="warning_message">• Reboot will restart device immediately\n• Press Back to return to Kiosk</string>
     <string name="confirm_reboot_title">Confirm Reboot</string>
     <string name="confirm_reboot_message">Device will restart now. Continue?</string>
