@@ -48,10 +48,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 隐藏状态栏和导航栏（基于 YF-356x 广播接口）
-        hideSystemBars()
-
-        FullScreenHelper.enableImmersiveMode(this.window)
+        FullScreenHelper.enableImmersiveMode(this, this.window)
         StayOnTopServiceStarter.ensureRunning(this)
 
         unlockHandler = TapUnlockHandler {
@@ -101,8 +98,7 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         idleController.start()
 
-        // 可选：onResume 时再次确保隐藏（防止系统恢复）
-        hideSystemBars()
+        FullScreenHelper.enableImmersiveMode(this, this.window)
     }
 }
 

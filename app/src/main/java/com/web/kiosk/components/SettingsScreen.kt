@@ -652,7 +652,7 @@ fun InfoSettingsTab(context: Context) {
                     Text(
                         text = stringResource(R.string.ethernet_mac_label),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = ethernetMac,
@@ -668,7 +668,7 @@ fun InfoSettingsTab(context: Context) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Network Type",
+                        text = stringResource(R.string.network_type_label),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
